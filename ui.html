@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=TikTok+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  color-scheme: dark;
+}
+
+:root {
+  --bg-app: #0c0c0e;
+  --bg-panel: #16161a;
+  --bg-elevated: #1f1f24;
+  --bg-well: #09090b;
+  --bg-well-mid: #121216;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-focus: rgba(64, 156, 255, 0.55);
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.52);
+  --text-tertiary: rgba(255, 255, 255, 0.34);
+  --accent: #409cff;
+  --accent-hover: #5cadff;
+  --accent-press: #2d87e6;
+  --danger: #ff6b6b;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-preview: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.07);
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --font: 'TikTok Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 12px;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+#main-split {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
+#left-column {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+  min-height: 0;
+}
+
+#edit-canvas-wrap {
+  flex: 1;
+  min-height: 80px;
+  position: relative;
+  margin: 0 12px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+    var(--bg-well);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 0 1px var(--border-subtle);
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#edit-canvas-inner {
+  display: block;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+#canvas-edit {
+  display: block;
+  user-select: none;
+  border-radius: var(--radius-sm);
+}
+
+.edit-zoom-hint {
+  flex-shrink: 0;
+  padding: 0 12px 8px;
+  font-size: 10px;
+  color: var(--text-tertiary);
+  line-height: 1.35;
+  text-align: center;
+}
+
+.bubble-switcher {
+  flex-shrink: 0;
+  margin: 0 10px 8px;
+}
+.bubble-switcher.hidden {
+  display: none;
+}
+.bubble-switcher-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin: 0 2px 6px;
+}
+.bubble-switcher-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  -webkit-overflow-scrolling: touch;
+}
+.bubble-peer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-well);
+  color: var(--text-secondary);
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 10px;
+  max-width: 220px;
+  text-align: left;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease), color 0.12s var(--ease);
+}
+.bubble-peer-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 5px;
+  background: var(--bg-well-mid);
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.bubble-peer-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+.bubble-peer:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+.bubble-peer.bubble-peer-active {
+  border-color: rgba(64, 156, 255, 0.5);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 1px rgba(64, 156, 255, 0.12);
+}
+.bubble-peer-name {
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+.bubble-peer-size {
+  font-size: 9px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.bubble-peer.bubble-peer-active .bubble-peer-size {
+  color: var(--text-secondary);
+}
+
+#preview-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-app);
+}
+
+#preview-column-header {
+  flex-shrink: 0;
+  padding: 14px 20px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-app) 100%);
+}
+
+#preview-canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: auto;
+  /* Phone stage starts 80px below header; horizontal scroll keeps left/right screen edges reachable at 120% scale */
+  padding: 80px 12px 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(64, 156, 255, 0.06) 0%, transparent 55%),
+    var(--bg-app);
+}
+
+#phone-preview-stage {
+  flex: 0 0 auto;
+  line-height: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-preview);
+  overflow: hidden;
+}
+
+#canvas-preview {
+  display: block;
+}
+
+#tabs {
+  flex-shrink: 0;
+  padding: 14px 12px 12px;
+  background: var(--bg-panel);
+}
+
+.tabs-inner {
+  display: flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  background: var(--bg-well);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+.tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.tab.tab-active {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+#controls {
+  flex-shrink: 0;
+  padding: 14px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-panel);
+}
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+#preview-text {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-well);
+  color: var(--text-primary);
+  font-family: inherit;
+  user-select: text;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+#preview-text::placeholder {
+  color: var(--text-tertiary);
+}
+#preview-text:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+#preview-text:focus {
+  outline: none;
+  border-color: rgba(64, 156, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(64, 156, 255, 0.15);
+}
+
+#btn-export {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-press) 100%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 12px rgba(64, 156, 255, 0.22);
+  transition: filter 0.15s var(--ease), transform 0.1s var(--ease), opacity 0.15s var(--ease);
+}
+#btn-export:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+#btn-export:active:not(:disabled) {
+  transform: scale(0.98);
+  filter: brightness(0.95);
+}
+#btn-export:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+#btn-export:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: none;
+}
+
+#status-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  padding: 12px;
+}
+#status-box {
+  background: rgba(28, 28, 32, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  max-width: 92%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+#status-box.err {
+  color: #ff9a8b;
+  border-color: rgba(255, 107, 107, 0.35);
+  background: rgba(48, 22, 22, 0.92);
+}
+#status-box.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="main-split">
+  <aside id="left-column">
+    <div id="tabs" role="tablist">
+      <div class="tabs-inner">
+        <button type="button" class="tab tab-active" id="tab-stretch" role="tab" aria-selected="true"
+          onclick="setZone('stretch')">Flex area</button>
+        <button type="button" class="tab" id="tab-content" role="tab" aria-selected="false"
+          onclick="setZone('content')">Content insets</button>
+      </div>
+    </div>
+    <div class="edit-zoom-hint" id="edit-zoom-hint">⌘/Ctrl + scroll to zoom · double-click to reset</div>
+    <div id="bubble-switcher" class="bubble-switcher hidden" role="group" aria-label="Bubbles in selection">
+      <div class="bubble-switcher-label">Compare bubbles</div>
+      <div id="bubble-switcher-scroll" class="bubble-switcher-scroll"></div>
+    </div>
+    <div id="edit-canvas-wrap">
+      <div id="edit-canvas-inner">
+        <canvas id="canvas-edit"></canvas>
+      </div>
+      <div id="status-overlay">
+        <div id="status-box">Loading preview…</div>
+      </div>
+    </div>
+    <div id="controls">
+      <div>
+        <label class="field-label" for="preview-text">Preview text</label>
+        <input type="text" id="preview-text" value="Yo" placeholder="Type to preview in the bubble…" autocomplete="off" />
+      </div>
+      <button type="button" id="btn-export" disabled onclick="generateSnapshot()">Export to Figma</button>
+    </div>
+  </aside>
+  <section id="preview-column">
+    <div id="preview-column-header">Preview</div>
+    <div id="preview-canvas-wrap">
+      <!-- Chat screen art: export Figma node 3558-13611 from file uHwTK3KI1XfBG2CsvGGlkY as phone-chat-mockup.png (390×844 logical). -->
+      <div id="phone-preview-stage">
+        <canvas id="canvas-preview"></canvas>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const COLORS = { flex: '#FF3B30', content: '#007AFF' };
+/** Flex/stretch insets + content insets per edge; middle tiles to fit (native nine-patch / tileToResize model). */
+const ninePatch = {
+  flexInsets: { top: 0, left: 0, right: 0, bottom: 0, active: true },
+  contentInsets: { top: 0, left: 0, right: 0, bottom: 0, active: false },
+};
+const MID_MIN = 4;
+const CONTENT_FONT_PX = 16;
+/** 150% line height — matches min inner text height (see CONTENT_INNER_MIN_H). */
+const CONTENT_LINE_HEIGHT_PX = CONTENT_FONT_PX * 1.5;
+/** Minimum inner text box (px) — enforced before text-driven growth. */
+const CONTENT_INNER_MIN_W = 26;
+const CONTENT_INNER_MIN_H = 24;
+/** Max line width before wrap (patch/output px) — analogous to native _maxTextWidth. */
+const MAX_TEXT_WIDTH = 300;
+/** Subpixel mapped rects. */
+const VERTICAL_FIT_EPS_PX = 1;
+
+/** TikTok Sans Regular (400) for preview/measure; matches in-app messaging typography when the font loads. */
+const CONTENT_PREVIEW_FONT = `${CONTENT_FONT_PX}px "TikTok Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
+
+function effectiveTextWrapWidth(innerW) {
+  return Math.max(8, Math.min(innerW, MAX_TEXT_WIDTH));
+}
+
+/** Inner width (px) one line needs, capped at MAX_TEXT_WIDTH, floored at CONTENT_INNER_MIN_W. */
+function textMinInnerWidthNeeded(text) {
+  const t = (text || '').trim();
+  if (!t) return CONTENT_INNER_MIN_W;
+  measureCtx.font = CONTENT_PREVIEW_FONT;
+  const lines = wrapTextLines(measureCtx, t, 1e6);
+  let mw = 0;
+  for (const ln of lines) mw = Math.max(mw, measureCtx.measureText(ln).width);
+  return Math.max(CONTENT_INNER_MIN_W, Math.min(MAX_TEXT_WIDTH, Math.ceil(mw)));
+}
+
+let activeZone = 'stretch';
+let imgEl = null;
+let imgW = 0;
+let imgH = 0;
+/** Logical size for markup canvas (always native asset dimensions). */
+let patchW = 0;
+let patchH = 0;
+/** Logical size for preview + export (may grow for text). */
+let patchPreviewW = 100;
+let patchPreviewH = 100;
+let scaleEdit = 1;
+/** User zoom on the markup canvas (1 = fit panel). ⌘/Ctrl + scroll. */
+let editZoom = 1;
+const EDIT_ZOOM_MIN = 1;
+const EDIT_ZOOM_MAX = 8;
+const EDIT_ZOOM_STEP = 1.12;
+let scalePreview = 1;
+/** Device pixel ratio applied to each canvas bitmap (sharp on Retina). */
+let editCanvasDpr = 1;
+let previewCanvasDpr = 1;
+let drag = null;
+/** Figma node id for the current PNG — used to restore saved flex/content marks from localStorage. */
+let currentNodeId = '';
+/** All exportable nodes in the current Figma selection (for multi-bubble compare). */
+let selectionPeers = [];
+/** Object URLs for bubble switcher thumbnails — revoked when the strip re-renders. */
+let bubbleSwitcherThumbUrls = [];
+
+const ZONE_STORAGE_PREFIX = 'chatBubbleZones:v1:';
+let saveZonesTimer = null;
+
+const measureCanvas = document.createElement('canvas');
+const measureCtx = measureCanvas.getContext('2d');
+
+const HANDLE_R = 5;
+const HANDLE_HIT = 8;
+/** Never upscale past Figma 1:1 px — only downscale to fit the panel (avoids blurry preview). */
+const DISPLAY_MAX_SCALE = 1;
+/** Internal canvas resolution = CSS size × this (left + right panels); browser scales down for crisp preview). */
+const PREVIEW_CANVAS_PIXEL_SCALE = 3;
+/** Right panel: full phone frame (logical px) + outgoing bubble placement. */
+const PHONE_PREVIEW_W = 390;
+const PHONE_PREVIEW_H = 844;
+const PHONE_PREVIEW_BUBBLE_Y = 115;
+const PHONE_PREVIEW_BUBBLE_MAX_W = 270;
+const PHONE_PREVIEW_BUBBLE_MARGIN_R = 18;
+/** Match #preview-canvas-wrap padding (top offset + gutters for edge visibility). */
+const PREVIEW_PANEL_PAD_TOP = 80;
+const PREVIEW_PANEL_PAD_X = 12;
+const PREVIEW_PANEL_PAD_BOTTOM = 24;
+/** Scale phone vs “fit in panel” so preview reads larger; overflow scroll shows full width. */
+const PREVIEW_PHONE_SCALE_MULTIPLIER = 1.2;
+const EDGE_HIT_PX = 7;
+
+const canvasEdit = document.getElementById('canvas-edit');
+const canvasPreview = document.getElementById('canvas-preview');
+const ctxEdit = canvasEdit.getContext('2d');
+const ctxPreview = canvasPreview.getContext('2d');
+
+/** DM chat shell — replace with export from Figma 💬 Direct Message (node 3558-13611). */
+const phoneChatMockupImg = new Image();
+phoneChatMockupImg.src = 'phone-chat-mockup.png';
+phoneChatMockupImg.onload = () => {
+  if (imgEl) refreshPreviewOnly();
+};
+
+window.onmessage = (event) => {
+  const msg = event.data.pluginMessage;
+  if (!msg) return;
+  if (msg.type === 'preview') loadPreview(msg.bytes, msg.width, msg.height, msg.nodeId, msg.selectionPeers);
+  if (msg.type === 'needs-selection') {
+    flushSaveZoneState();
+    selectionPeers = [];
+    renderBubbleSwitcher();
+    if (imgEl) showSelectionHint(msg.message);
+    else clearPreview(msg.message);
+  }
+  if (msg.type === 'snapshot-done') onSnapshotDone();
+  if (msg.type === 'error') {
+    showStatus(msg.message, true);
+    resetExportButton();
+  }
+};
+
+parent.postMessage({ pluginMessage: { type: 'ready' } }, '*');
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushSaveZoneState();
+});
+window.addEventListener('pagehide', flushSaveZoneState);
+window.addEventListener('blur', flushSaveZoneState);
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    fitCanvases();
+    render();
+  });
+}
+
+function clearPreview(message) {
+  imgEl = null;
+  imgW = 0;
+  imgH = 0;
+  patchW = 0;
+  patchH = 0;
+  patchPreviewW = 100;
+  patchPreviewH = 100;
+  editZoom = 1;
+  currentNodeId = '';
+  selectionPeers = [];
+  renderBubbleSwitcher();
+  ninePatch.flexInsets = { top: 0, left: 0, right: 0, bottom: 0, active: true };
+  ninePatch.contentInsets = { top: 0, left: 0, right: 0, bottom: 0, active: false };
+  document.getElementById('btn-export').disabled = true;
+  showStatus(message || 'Select one frame or layer to preview.', false);
+  fitCanvases();
+  render();
+}
+
+/** Selection cleared / invalid — keep last bubble + markings on screen; only block export until you select again. */
+function showSelectionHint(message) {
+  document.getElementById('btn-export').disabled = true;
+  showStatus(message || 'Select one frame or layer to preview.', false);
+  fitCanvases();
+  render();
+}
+
+function zoneStorageKey(nodeId) {
+  return ZONE_STORAGE_PREFIX + nodeId;
+}
+
+function restoreZoneState(nodeId, w, h) {
+  if (!nodeId || !w || !h) return null;
+  try {
+    const raw = localStorage.getItem(zoneStorageKey(nodeId));
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (d.w !== w || d.h !== h || !d.flexInsets || !d.contentInsets) return null;
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function scheduleSaveZoneState() {
+  if (saveZonesTimer) clearTimeout(saveZonesTimer);
+  saveZonesTimer = setTimeout(() => {
+    saveZonesTimer = null;
+    saveZoneState();
+  }, 200);
+}
+
+/** Write zones to localStorage immediately (clears pending debounce). Call when leaving the bubble or switching selection. */
+function flushSaveZoneState() {
+  if (saveZonesTimer) {
+    clearTimeout(saveZonesTimer);
+    saveZonesTimer = null;
+  }
+  saveZoneState();
+}
+
+function saveZoneState() {
+  if (!currentNodeId || !imgEl || !imgW || !imgH) return;
+  try {
+    const fi = ninePatch.flexInsets;
+    const ci = ninePatch.contentInsets;
+    localStorage.setItem(
+      zoneStorageKey(currentNodeId),
+      JSON.stringify({
+        w: imgW,
+        h: imgH,
+        flexInsets: {
+          top: fi.top,
+          left: fi.left,
+          right: fi.right,
+          bottom: fi.bottom,
+          active: fi.active !== false,
+        },
+        contentInsets: {
+          top: ci.top,
+          left: ci.left,
+          right: ci.right,
+          bottom: ci.bottom,
+          active: ci.active !== false,
+        },
+        previewText: document.getElementById('preview-text').value,
+      }),
+    );
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function normalizeSelectionPeers(peers, fallbackId, w, h) {
+  if (Array.isArray(peers) && peers.length > 0) {
+    return peers.map((p) => ({
+      id: String(p.id),
+      name: typeof p.name === 'string' ? p.name : 'Layer',
+      width: typeof p.width === 'number' ? p.width : w,
+      height: typeof p.height === 'number' ? p.height : h,
+      thumbBytes:
+        Array.isArray(p.thumbBytes) && p.thumbBytes.length > 0 ? p.thumbBytes : null,
+    }));
+  }
+  if (fallbackId) return [{ id: String(fallbackId), name: 'Bubble', width: w, height: h, thumbBytes: null }];
+  return [];
+}
+
+function revokeBubbleSwitcherThumbUrls() {
+  for (const u of bubbleSwitcherThumbUrls) {
+    try {
+      URL.revokeObjectURL(u);
+    } catch (_) {}
+  }
+  bubbleSwitcherThumbUrls = [];
+}
+
+function renderBubbleSwitcher() {
+  const wrap = document.getElementById('bubble-switcher');
+  const scroll = document.getElementById('bubble-switcher-scroll');
+  if (!wrap || !scroll) return;
+  revokeBubbleSwitcherThumbUrls();
+  if (!selectionPeers || selectionPeers.length <= 1) {
+    wrap.classList.add('hidden');
+    scroll.innerHTML = '';
+    return;
+  }
+  wrap.classList.remove('hidden');
+  scroll.textContent = '';
+  for (const p of selectionPeers) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bubble-peer' + (p.id === currentNodeId ? ' bubble-peer-active' : '');
+    btn.dataset.nodeId = p.id;
+    btn.title = p.name;
+    if (p.thumbBytes && p.thumbBytes.length > 0) {
+      const blob = new Blob([new Uint8Array(p.thumbBytes)], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+      bubbleSwitcherThumbUrls.push(url);
+      const img = document.createElement('img');
+      img.className = 'bubble-peer-thumb';
+      img.src = url;
+      img.alt = '';
+      btn.appendChild(img);
+    }
+    const textCol = document.createElement('span');
+    textCol.className = 'bubble-peer-text';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'bubble-peer-name';
+    nameSpan.textContent = p.name.length > 24 ? p.name.slice(0, 23) + '\u2026' : p.name;
+    const sizeSpan = document.createElement('span');
+    sizeSpan.className = 'bubble-peer-size';
+    sizeSpan.textContent = `${p.width}\u00d7${p.height}`;
+    textCol.appendChild(nameSpan);
+    textCol.appendChild(sizeSpan);
+    btn.appendChild(textCol);
+    btn.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'pick-bubble', nodeId: p.id } }, '*');
+    });
+    scroll.appendChild(btn);
+  }
+}
+
+function loadPreview(bytes, w, h, nodeId, peers) {
+  const nid = typeof nodeId === 'string' ? nodeId : '';
+  selectionPeers = normalizeSelectionPeers(peers, nid, w, h);
+  flushSaveZoneState();
+  const sameNodeAndSize =
+    Boolean(imgEl && nid && nid === currentNodeId && w === imgW && h === imgH);
+
+  if (sameNodeAndSize) {
+    const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
+    const url = URL.createObjectURL(blob);
+    const next = new Image();
+    next.onload = () => {
+      URL.revokeObjectURL(url);
+      imgEl = next;
+      editZoom = 1;
+      fitCanvases();
+      hideStatus();
+      document.getElementById('btn-export').disabled = false;
+      renderBubbleSwitcher();
+      render();
+    };
+    next.onerror = () => {
+      URL.revokeObjectURL(url);
+      showStatus('Failed to decode image.', true);
+    };
+    next.src = url;
+    return;
+  }
+
+  imgW = w;
+  imgH = h;
+  const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
+  const url = URL.createObjectURL(blob);
+  const next = new Image();
+  next.onload = () => {
+    URL.revokeObjectURL(url);
+    imgEl = next;
+    editZoom = 1;
+    currentNodeId = nid;
+    const restored = restoreZoneState(nid, w, h);
+    const textEl = document.getElementById('preview-text');
+    if (restored) {
+      ninePatch.flexInsets = {
+        top: restored.flexInsets.top,
+        left: restored.flexInsets.left,
+        right: restored.flexInsets.right,
+        bottom: restored.flexInsets.bottom,
+        active: restored.flexInsets.active !== false,
+      };
+      ninePatch.contentInsets = {
+        top: restored.contentInsets.top,
+        left: restored.contentInsets.left,
+        right: restored.contentInsets.right,
+        bottom: restored.contentInsets.bottom,
+        active: restored.contentInsets.active !== false,
+      };
+      clampFlexInsets(ninePatch.flexInsets);
+      clampContentInsets();
+      if (Object.prototype.hasOwnProperty.call(restored, 'previewText') && restored.previewText != null) {
+        textEl.value = String(restored.previewText);
+      }
+    } else {
+      initDefaultZones();
+      if (!textEl.value.trim()) textEl.value = 'Yo';
+    }
+    fitCanvases();
+    hideStatus();
+    document.getElementById('btn-export').disabled = false;
+    renderBubbleSwitcher();
+    render();
+  };
+  next.onerror = () => {
+    URL.revokeObjectURL(url);
+    showStatus('Failed to decode image.', true);
+  };
+  next.src = url;
+}
+
+/** Map source X into patch output width ow (9-slice horizontal). */
+function mapX(sx, ow) {
+  const L = ninePatch.flexInsets.left, R = ninePatch.flexInsets.right;
+  const sw = imgW;
+  if (sx <= L) return sx;
+  if (sx >= sw - R) return ow - (sw - sx);
+  const midS = sw - L - R;
+  const midO = ow - L - R;
+  if (midS < 0.001) return sx;
+  return L + ((sx - L) * midO) / midS;
+}
+
+function mapY(sy, oh) {
+  const T = ninePatch.flexInsets.top, B = ninePatch.flexInsets.bottom;
+  const sh = imgH;
+  if (sy <= T) return sy;
+  if (sy >= sh - B) return oh - (sh - sy);
+  const midS = sh - T - B;
+  const midO = oh - T - B;
+  if (midS < 0.001) return sy;
+  return T + ((sy - T) * midO) / midS;
+}
+
+function invMapX(dx, ow) {
+  const L = ninePatch.flexInsets.left, R = ninePatch.flexInsets.right;
+  const sw = imgW;
+  if (dx <= L) return dx;
+  if (dx >= ow - R) return sw - (ow - dx);
+  const midS = sw - L - R;
+  const midO = ow - L - R;
+  if (midO < 0.001) return dx;
+  return L + ((dx - L) * midS) / midO;
+}
+
+function invMapY(dy, oh) {
+  const T = ninePatch.flexInsets.top, B = ninePatch.flexInsets.bottom;
+  const sh = imgH;
+  if (dy <= T) return dy;
+  if (dy >= oh - B) return sh - (oh - dy);
+  const midS = sh - T - B;
+  const midO = oh - T - B;
+  if (midO < 0.001) return dy;
+  return T + ((dy - T) * midS) / midO;
+}
+
+function mapRectToDest(z, ow, oh) {
+  const ax0 = mapX(z.x, ow), ax1 = mapX(z.x + z.w, ow);
+  const ay0 = mapY(z.y, oh), ay1 = mapY(z.y + z.h, oh);
+  return {
+    x: Math.min(ax0, ax1),
+    y: Math.min(ay0, ay1),
+    w: Math.abs(ax1 - ax0),
+    h: Math.abs(ay1 - ay0),
+  };
+}
+
+/** Integer pixel rect — avoids subpixel drift vs Figma after 9-slice map + DPR. */
+function mapRectToDestRounded(z, ow, oh) {
+  const r = mapRectToDest(z, ow, oh);
+  return {
+    x: Math.round(r.x),
+    y: Math.round(r.y),
+    w: Math.max(0, Math.round(r.w)),
+    h: Math.max(0, Math.round(r.h)),
+  };
+}
+
+const CONTENT_PAD_MIN_INNER = 4;
+
+function clampContentInsets() {
+  const p = ninePatch.contentInsets;
+  if (!imgW || !imgH) return;
+  const lo = (v, hi) => Math.max(0, Math.min(v, hi));
+  p.left = lo(Math.round(p.left), imgW - CONTENT_PAD_MIN_INNER);
+  p.right = lo(Math.round(p.right), imgW - CONTENT_PAD_MIN_INNER);
+  p.top = lo(Math.round(p.top), imgH - CONTENT_PAD_MIN_INNER);
+  p.bottom = lo(Math.round(p.bottom), imgH - CONTENT_PAD_MIN_INNER);
+  while (p.left + p.right > imgW - CONTENT_PAD_MIN_INNER) {
+    if (p.left >= p.right) p.left = Math.max(0, p.left - 1);
+    else p.right = Math.max(0, p.right - 1);
+  }
+  while (p.top + p.bottom > imgH - CONTENT_PAD_MIN_INNER) {
+    if (p.top >= p.bottom) p.top = Math.max(0, p.top - 1);
+    else p.bottom = Math.max(0, p.bottom - 1);
+  }
+}
+
+/** Inner content rect in source pixels = asset minus content insets per edge (native model). */
+function contentRectSource() {
+  const p = ninePatch.contentInsets;
+  if (!p.active) return { x: 0, y: 0, w: 0, h: 0, active: false };
+  clampContentInsets();
+  return {
+    x: p.left,
+    y: p.top,
+    w: imgW - p.left - p.right,
+    h: imgH - p.top - p.bottom,
+    active: true,
+  };
+}
+
+function computePatchSize() {
+  if (!imgW || !imgH) return { pw: 100, ph: 100 };
+  const s = ninePatch.flexInsets;
+  const L = s.left, R = s.right, T = s.top, B = s.bottom;
+  let pw = imgW, ph = imgH;
+  const midW = imgW - L - R, midH = imgH - T - B;
+  const z = contentRectSource();
+  const txt = (document.getElementById('preview-text')?.value || '').trim();
+  if (midW < 1 || midH < 1) return { pw, ph };
+
+  if (z.active && z.w >= 2 && z.h >= 2 && txt) {
+    /** Match draw path (`mapRectToDestRounded`) so inner size isn’t overstated vs clip rect. */
+    const measureInner = () => {
+      const d = mapRectToDestRounded(z, pw, ph);
+      return {
+        innerW: Math.max(0, d.w),
+        innerH: Math.max(0, d.h),
+      };
+    };
+
+    /** Widen patch middle until mapped inner width reaches target (9-slice horizontal). */
+    function growInnerWidthTo(targetInnerW) {
+      for (let i = 0; i < 120; i++) {
+        const { innerW } = measureInner();
+        if (innerW >= targetInnerW) break;
+        const midOutW = Math.max(1, pw - L - R);
+        const targetInner = Math.min(targetInnerW, Math.max(innerW + 1, innerW * 1.12 + 4));
+        const scaleNeeded = targetInner / Math.max(1, innerW);
+        const newMid = Math.max(midOutW + 1, Math.ceil(midOutW * scaleNeeded));
+        pw = Math.min(imgW * 14, L + R + newMid);
+        const innerAfter = measureInner().innerW;
+        if (innerAfter <= innerW + 0.5) break;
+      }
+    }
+
+    /** Grow patch middle vertically until mapped inner height reaches target. */
+    function growInnerHeightTo(targetInnerH) {
+      for (let j = 0; j < 100; j++) {
+        const { innerH } = measureInner();
+        if (innerH >= targetInnerH) break;
+        const midOut = Math.max(1, ph - T - B);
+        const factor = (innerH + (targetInnerH - innerH) + 8) / Math.max(1, innerH);
+        ph = Math.ceil(T + B + midOut * Math.max(1.02, factor));
+        ph = Math.min(ph, imgH * 14);
+        const after = measureInner().innerH;
+        if (after >= targetInnerH) break;
+        if (after <= innerH + 0.5) {
+          ph = Math.min(imgH * 14, ph + Math.max(6, Math.ceil((targetInnerH - after) / 3)));
+        }
+      }
+    }
+
+    // 1) Width-first: enforce minimum 26×24 text slot (only stretch middle via pw / ph).
+    growInnerWidthTo(CONTENT_INNER_MIN_W);
+    growInnerHeightTo(CONTENT_INNER_MIN_H);
+
+    // 2) Width-only: grow until one line fits up to MAX_TEXT_WIDTH (content + flex map).
+    growInnerWidthTo(textMinInnerWidthNeeded(txt));
+
+    // 3) After width is set, grow patch height until wrapped text fits (same wrap + metrics as preview draw).
+    for (let j = 0; j < 120; j++) {
+      const { innerW, innerH } = measureInner();
+      const hNeed = previewTextBlockHeightPx(txt, innerW);
+      if (hNeed <= innerH + VERTICAL_FIT_EPS_PX) break;
+      growInnerHeightTo(Math.max(CONTENT_INNER_MIN_H, Math.ceil(hNeed)));
+    }
+  }
+
+  pw = Math.max(pw, L + R + 2);
+  ph = Math.max(ph, T + B + 2);
+  /** Cap bubble width for phone preview; grow height so text still fits when wrapped narrower. */
+  if (pw > PHONE_PREVIEW_BUBBLE_MAX_W) {
+    pw = Math.max(L + R + 2, Math.min(pw, PHONE_PREVIEW_BUBBLE_MAX_W));
+    const tcap = (document.getElementById('preview-text')?.value || '').trim();
+    if (z.active && z.w >= 2 && z.h >= 2 && tcap && midW >= 1 && midH >= 1) {
+      for (let j = 0; j < 120; j++) {
+        const d = mapRectToDestRounded(z, pw, ph);
+        const innerW = Math.max(0, d.w);
+        const innerH = Math.max(0, d.h);
+        const hNeed = previewTextBlockHeightPx(tcap, innerW);
+        if (hNeed <= innerH + VERTICAL_FIT_EPS_PX) break;
+        const midOut = Math.max(1, ph - T - B);
+        const factor = (innerH + (hNeed - innerH) + 8) / Math.max(1, innerH);
+        ph = Math.ceil(T + B + midOut * Math.max(1.02, factor));
+        ph = Math.min(ph, imgH * 14);
+      }
+    }
+  }
+  return { pw, ph };
+}
+
+/** Tile source nine-patch into dest rect (stretch middle bands; fixed corners/edges). */
+function tileNinePatchToRect(ctx, img, x, y, dw, dh, s) {
+  const L = s.left, R = s.right, T = s.top, B = s.bottom;
+  const sw = img.width, sh = img.height;
+  const mw = sw - L - R, mh = sh - T - B;
+  const dwMid = dw - L - R, dhMid = dh - T - B;
+  if (mw < 1 || mh < 1 || dwMid < 1 || dhMid < 1) {
+    ctx.drawImage(img, x, y, dw, dh);
+    return;
+  }
+  ctx.drawImage(img, 0, 0, L, T, x, y, L, T);
+  ctx.drawImage(img, L, 0, mw, T, x + L, y, dwMid, T);
+  ctx.drawImage(img, sw - R, 0, R, T, x + dw - R, y, R, T);
+  ctx.drawImage(img, 0, T, L, mh, x, y + T, L, dhMid);
+  ctx.drawImage(img, L, T, mw, mh, x + L, y + T, dwMid, dhMid);
+  ctx.drawImage(img, sw - R, T, R, mh, x + dw - R, y + T, R, dhMid);
+  ctx.drawImage(img, 0, sh - B, L, B, x, y + dh - B, L, B);
+  ctx.drawImage(img, L, sh - B, mw, B, x + L, y + dh - B, dwMid, B);
+  ctx.drawImage(img, sw - R, sh - B, R, B, x + dw - R, y + dh - B, R, B);
+}
+
+function syncEditCanvasMetrics() {
+  patchW = imgEl ? imgW : 100;
+  patchH = imgEl ? imgH : 100;
+  const editWrap = document.getElementById('edit-canvas-wrap');
+  const pad = 20;
+  const maxWEdit = Math.max(36, editWrap.clientWidth - pad);
+  const maxHEdit = Math.max(36, editWrap.clientHeight - pad);
+  const scaleEditFit = Math.min(DISPLAY_MAX_SCALE, maxWEdit / patchW, maxHEdit / patchH);
+  scaleEdit = scaleEditFit * editZoom;
+  const cssW = Math.max(1, Math.round(patchW * scaleEdit));
+  const cssH = Math.max(1, Math.round(patchH * scaleEdit));
+  editCanvasDpr = PREVIEW_CANVAS_PIXEL_SCALE;
+  canvasEdit.style.width = `${cssW}px`;
+  canvasEdit.style.height = `${cssH}px`;
+  canvasEdit.width = Math.round(cssW * editCanvasDpr);
+  canvasEdit.height = Math.round(cssH * editCanvasDpr);
+  updateEditZoomHint();
+}
+
+function updateEditZoomHint() {
+  const el = document.getElementById('edit-zoom-hint');
+  if (!el) return;
+  const pct = Math.round(editZoom * 100);
+  el.textContent =
+    pct === 100
+      ? '⌘/Ctrl + scroll to zoom · double-click to reset'
+      : `Zoom ${pct}% · ⌘/Ctrl + scroll · double-click reset`;
+}
+
+function syncPreviewCanvasMetrics() {
+  const { pw, ph } = computePatchSize();
+  patchPreviewW = pw;
+  patchPreviewH = ph;
+  const previewWrap = document.getElementById('preview-canvas-wrap');
+  const innerW = Math.max(48, previewWrap.clientWidth - PREVIEW_PANEL_PAD_X * 2);
+  const innerH = Math.max(
+    48,
+    previewWrap.clientHeight - PREVIEW_PANEL_PAD_TOP - PREVIEW_PANEL_PAD_BOTTOM,
+  );
+  const baseScale = Math.min(DISPLAY_MAX_SCALE, innerW / PHONE_PREVIEW_W, innerH / PHONE_PREVIEW_H);
+  scalePreview = baseScale * PREVIEW_PHONE_SCALE_MULTIPLIER;
+  const cssW = Math.max(1, Math.round(PHONE_PREVIEW_W * scalePreview));
+  const cssH = Math.max(1, Math.round(PHONE_PREVIEW_H * scalePreview));
+  previewCanvasDpr = PREVIEW_CANVAS_PIXEL_SCALE;
+  canvasPreview.style.width = `${cssW}px`;
+  canvasPreview.style.height = `${cssH}px`;
+  canvasPreview.width = Math.round(cssW * previewCanvasDpr);
+  canvasPreview.height = Math.round(cssH * previewCanvasDpr);
+}
+
+function fitCanvases() {
+  syncEditCanvasMetrics();
+  syncPreviewCanvasMetrics();
+}
+
+function clampFlexInsets(s) {
+  if (!imgW || !imgH) return;
+  let top = Math.round(Number(s.top)) || 0;
+  let left = Math.round(Number(s.left)) || 0;
+  let right = Math.round(Number(s.right)) || 0;
+  let bottom = Math.round(Number(s.bottom)) || 0;
+  top = clamp(top, 0, imgH - MID_MIN);
+  bottom = clamp(bottom, 0, imgH - MID_MIN);
+  left = clamp(left, 0, imgW - MID_MIN);
+  right = clamp(right, 0, imgW - MID_MIN);
+  if (top + bottom > imgH - MID_MIN) {
+    const cap = imgH - MID_MIN;
+    const sum = top + bottom;
+    top = Math.max(0, Math.floor((top / sum) * cap));
+    bottom = cap - top;
+  }
+  if (left + right > imgW - MID_MIN) {
+    const cap = imgW - MID_MIN;
+    const sum = left + right;
+    left = Math.max(0, Math.floor((left / sum) * cap));
+    right = cap - left;
+  }
+  s.top = top;
+  s.left = left;
+  s.right = right;
+  s.bottom = bottom;
+}
+
+function initDefaultZones() {
+  const MIN = 4;
+  const t = Math.max(4, Math.round(imgH * 0.08));
+  const l = Math.max(4, Math.round(imgW * 0.08));
+  const b = Math.max(4, Math.round(imgH * 0.06));
+  const r = Math.max(4, Math.round(imgW * 0.06));
+  ninePatch.flexInsets = { top: t, left: l, right: r, bottom: b, active: true };
+  clampFlexInsets(ninePatch.flexInsets);
+
+  const insetX = Math.max(MIN, Math.round(imgW * 0.12));
+  const insetY = Math.max(MIN, Math.round(imgH * 0.12));
+  ninePatch.contentInsets = {
+    left: insetX,
+    right: insetX,
+    top: insetY,
+    bottom: insetY,
+    active: true,
+  };
+}
+
+window.addEventListener('resize', () => {
+  fitCanvases();
+  render();
+});
+
+/** Markup only: native asset size, stretch/content guides — no preview text, no text-driven stretch. */
+function renderEditFrame() {
+  const ctx = ctxEdit;
+  const cvs = canvasEdit;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  if (!imgEl) return;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+  ctx.scale(editCanvasDpr, editCanvasDpr);
+  ctx.scale(scaleEdit, scaleEdit);
+  tileNinePatchToRect(ctx, imgEl, 0, 0, patchW, patchH, ninePatch.flexInsets);
+
+  if (activeZone === 'stretch') {
+    drawStretch9Patch(ctx, ninePatch.flexInsets, true);
+    drawStretchInsetLabels(ctx, ninePatch.flexInsets);
+  } else {
+    const z = contentRectSource();
+    if (z.active && z.w >= 1 && z.h >= 1) {
+      drawZone(ctx, 'content', z, true);
+      drawContentPaddingLabels(ctx);
+    }
+  }
+  ctx.restore();
+}
+
+/** Phone mockup + outgoing bubble (right panel). Bubble max width 270px at Y=115 in 390×844 space. */
+function renderPreviewFrame() {
+  const ctx = ctxPreview;
+  const cvs = canvasPreview;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  if (!imgEl) return;
+
+  const bubbleW = patchPreviewW;
+  const bubbleH = patchPreviewH;
+  const bubbleX = PHONE_PREVIEW_W - PHONE_PREVIEW_BUBBLE_MARGIN_R - bubbleW;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+  ctx.scale(previewCanvasDpr, previewCanvasDpr);
+  ctx.scale(scalePreview, scalePreview);
+
+  if (phoneChatMockupImg.complete && phoneChatMockupImg.naturalWidth > 0) {
+    ctx.drawImage(phoneChatMockupImg, 0, 0, PHONE_PREVIEW_W, PHONE_PREVIEW_H);
+  } else {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, PHONE_PREVIEW_W, PHONE_PREVIEW_H);
+  }
+
+  tileNinePatchToRect(ctx, imgEl, bubbleX, PHONE_PREVIEW_BUBBLE_Y, bubbleW, bubbleH, ninePatch.flexInsets);
+
+  ctx.save();
+  ctx.translate(bubbleX, PHONE_PREVIEW_BUBBLE_Y);
+  drawContentPreviewTextSized(
+    ctx,
+    contentRectSource(),
+    document.getElementById('preview-text').value,
+    bubbleW,
+    bubbleH,
+  );
+  ctx.restore();
+
+  ctx.restore();
+}
+
+function render() {
+  fitCanvases();
+  renderEditFrame();
+  renderPreviewFrame();
+}
+
+/** Typing preview text only affects the right panel — avoids redrawing markup. */
+function refreshPreviewOnly() {
+  if (!imgEl) return;
+  syncPreviewCanvasMetrics();
+  renderPreviewFrame();
+}
+
+function drawStretch9PatchSized(ctx, s, ow, oh, isActive) {
+  if (!s.active) return;
+  const { top, left, right, bottom } = s;
+  if (imgW - left - right < 1 || imgH - top - bottom < 1) return;
+
+  const vx = mapX(left, ow);
+  const vw = mapX(imgW - right, ow) - vx;
+  const hy = mapY(top, oh);
+  const hh = mapY(imgH - bottom, oh) - hy;
+
+  ctx.save();
+  ctx.fillStyle = isActive ? 'rgba(255,59,48,0.45)' : 'rgba(255,59,48,0.2)';
+  ctx.fillRect(vx, 0, vw, oh);
+  ctx.fillStyle = isActive ? 'rgba(52,199,89,0.45)' : 'rgba(52,199,89,0.18)';
+  ctx.fillRect(0, hy, ow, hh);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = COLORS.flex;
+  ctx.lineWidth = isActive ? 2 : 1;
+  const x1 = mapX(left, ow) + 0.5, x2 = mapX(imgW - right, ow) + 0.5;
+  const y1 = mapY(top, oh) + 0.5, y2 = mapY(imgH - bottom, oh) + 0.5;
+  ctx.beginPath();
+  ctx.moveTo(x1, 0); ctx.lineTo(x1, oh);
+  ctx.moveTo(x2, 0); ctx.lineTo(x2, oh);
+  ctx.moveTo(0, y1); ctx.lineTo(ow, y1);
+  ctx.moveTo(0, y2); ctx.lineTo(ow, y2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawStretch9Patch(ctx, s, isActive) {
+  drawStretch9PatchSized(ctx, s, patchW, patchH, isActive);
+}
+
+function drawOutlinedText(ctx, text, x, y, fontSize, align, baseline) {
+  ctx.save();
+  ctx.font = `600 ${fontSize}px "TikTok Sans", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+  ctx.textAlign = align || 'center';
+  ctx.textBaseline = baseline || 'middle';
+  const lw = Math.max(2.2, fontSize / 5.5);
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = 'rgba(0,0,0,0.78)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+function drawStretchInsetLabelsSized(ctx, s, ow, oh) {
+  if (!s.active) return;
+  const { top, left, right, bottom } = s;
+  const fs = Math.max(10, Math.min(15, Math.round(ow / 26)));
+  const pad = fs * 0.55;
+  drawOutlinedText(ctx, String(top), ow / 2, Math.max(pad, mapY(top / 2, oh)), fs);
+  drawOutlinedText(ctx, String(bottom), ow / 2, Math.min(oh - pad, mapY(imgH - bottom / 2, oh)), fs);
+  drawOutlinedText(ctx, String(left), Math.max(pad, mapX(left / 2, ow)), oh / 2, fs);
+  drawOutlinedText(ctx, String(right), Math.min(ow - pad, mapX(imgW - right / 2, ow)), oh / 2, fs);
+}
+
+function drawStretchInsetLabels(ctx, s) {
+  drawStretchInsetLabelsSized(ctx, s, patchW, patchH);
+}
+
+function drawContentPaddingLabelsSized(ctx, ow, oh) {
+  const p = ninePatch.contentInsets;
+  if (!p.active) return;
+  const z = contentRectSource();
+  if (!z.active || z.w < 1 || z.h < 1) return;
+  const ins = { top: p.top, left: p.left, right: p.right, bottom: p.bottom };
+  const fs = Math.max(10, Math.min(15, Math.round(ow / 26)));
+  const pad = fs * 0.55;
+  const mx = mapX(z.x + z.w / 2, ow);
+  const my = mapY(z.y + z.h / 2, oh);
+  drawOutlinedText(ctx, String(ins.top), mx, Math.max(pad, mapY(ins.top / 2, oh)), fs);
+  drawOutlinedText(ctx, String(ins.bottom), mx,
+    Math.min(oh - pad, mapY(z.y + z.h + ins.bottom / 2, oh)), fs);
+  drawOutlinedText(ctx, String(ins.left), Math.max(pad, mapX(ins.left / 2, ow)), my, fs);
+  drawOutlinedText(ctx, String(ins.right),
+    Math.min(ow - pad, mapX(z.x + z.w + ins.right / 2, ow)), my, fs);
+}
+
+function drawContentPaddingLabels(ctx) {
+  drawContentPaddingLabelsSized(ctx, patchW, patchH);
+}
+
+function wrapTextLines(ctx, text, maxW) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(t).width <= maxW) cur = t;
+    else {
+      if (cur) lines.push(cur);
+      if (ctx.measureText(w).width > maxW) {
+        let chunk = '';
+        for (const ch of w) {
+          const t2 = chunk + ch;
+          if (ctx.measureText(t2).width <= maxW) chunk = t2;
+          else {
+            if (chunk) lines.push(chunk);
+            chunk = ch;
+          }
+        }
+        cur = chunk;
+      } else cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+/**
+ * Ascent/descent from baseline for one line. Use max(actual, fontBoundingBox) so the first baseline
+ * is not placed too high: taking the smaller font box alone underestimated ink above the baseline and
+ * made preview text hug (or clip) the top of the content inset rect.
+ */
+function measureLineVerticalMetrics(ctx, sampleLine) {
+  const s = sampleLine || 'Mg';
+  const m = ctx.measureText(s);
+  let asc =
+    m.actualBoundingBoxAscent != null && Number.isFinite(m.actualBoundingBoxAscent) && m.actualBoundingBoxAscent > 0
+      ? m.actualBoundingBoxAscent
+      : CONTENT_FONT_PX * 0.72;
+  const fba = m.fontBoundingBoxAscent;
+  if (typeof fba === 'number' && fba > 0) asc = Math.max(asc, fba);
+  let desc =
+    m.actualBoundingBoxDescent != null && Number.isFinite(m.actualBoundingBoxDescent) && m.actualBoundingBoxDescent >= 0
+      ? m.actualBoundingBoxDescent
+      : CONTENT_FONT_PX * 0.22;
+  const fbd = m.fontBoundingBoxDescent;
+  if (typeof fbd === 'number' && fbd >= 0) desc = Math.max(desc, fbd);
+  return { asc, desc };
+}
+
+/** Pixel height of the text block as drawn: first baseline at top + asc, then line gaps, last line desc. */
+function previewTextBlockHeightPx(text, innerW) {
+  const t = (text || '').trim();
+  if (!t) return 0;
+  measureCtx.font = CONTENT_PREVIEW_FONT;
+  const wrapW = effectiveTextWrapWidth(innerW);
+  const lines = wrapTextLines(measureCtx, t, wrapW);
+  const n = lines.length;
+  if (n === 0) return 0;
+  const lineH = CONTENT_LINE_HEIGHT_PX;
+  const probe = lines[0] || t;
+  const { asc, desc } = measureLineVerticalMetrics(measureCtx, probe);
+  return asc + (n - 1) * lineH + desc;
+}
+
+/** 16px text in mapped content inset box (top edge + alphabetic baseline; native content area). */
+function drawContentPreviewTextSized(ctx, z, text, ow, oh) {
+  const t = (text || '').trim();
+  if (!t || !z.active || z.w < 2 || z.h < 2) return;
+
+  const d = mapRectToDestRounded(z, ow, oh);
+  if (d.w < 1 || d.h < 1) return;
+
+  const innerW = Math.max(0, d.w);
+  const wrapW = effectiveTextWrapWidth(innerW);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(d.x, d.y, d.w, d.h);
+  ctx.clip();
+  ctx.font = CONTENT_PREVIEW_FONT;
+  const lineH = CONTENT_LINE_HEIGHT_PX;
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(0,0,0,0.88)';
+
+  const naturalLines = wrapTextLines(ctx, t, 1e6);
+  let naturalMaxW = 0;
+  for (const ln of naturalLines) naturalMaxW = Math.max(naturalMaxW, ctx.measureText(ln).width);
+  const useCenter = naturalLines.length === 1 && naturalMaxW <= innerW;
+  ctx.textAlign = useCenter ? 'center' : 'left';
+  const xPos = useCenter ? d.x + d.w / 2 : d.x;
+
+  const lines = wrapTextLines(ctx, t, wrapW);
+  const probeLine = lines[0] || t;
+  const { asc, desc } = measureLineVerticalMetrics(ctx, probeLine);
+
+  let yBaseline = d.y + asc;
+  for (const line of lines) {
+    if (yBaseline + desc > d.y + d.h) break;
+    ctx.fillText(line, xPos, yBaseline);
+    yBaseline += lineH;
+  }
+  ctx.restore();
+}
+
+function handlePositionsDest(z) {
+  const d = mapRectToDest(z, patchW, patchH);
+  return [[d.x, d.y], [d.x + d.w, d.y], [d.x + d.w, d.y + d.h], [d.x, d.y + d.h]];
+}
+
+function drawZone(ctx, name, z, isActive) {
+  const color = name === 'stretch' ? COLORS.flex : COLORS.content;
+  const d = mapRectToDest(z, patchW, patchH);
+
+  ctx.fillStyle = color + (isActive ? '40' : '14');
+  ctx.fillRect(d.x, d.y, d.w, d.h);
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = isActive ? 2 : 1;
+  if (isActive) ctx.setLineDash([6, 4]);
+  ctx.strokeRect(d.x + 0.5, d.y + 0.5, d.w, d.h);
+  ctx.restore();
+
+  if (isActive) {
+    for (const [hx, hy] of handlePositionsDest(z)) {
+      ctx.beginPath();
+      ctx.arc(hx, hy, HANDLE_R, 0, Math.PI * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+}
+
+const HANDLE_IDS = ['nw', 'ne', 'se', 'sw'];
+const HANDLE_CURSORS = {
+  nw: 'nw-resize', ne: 'ne-resize', se: 'se-resize', sw: 'sw-resize',
+};
+
+function canvasToLogical(dpx, dpy) {
+  return [dpx / scaleEdit, dpy / scaleEdit];
+}
+
+function hitHandle(z, dpx, dpy) {
+  if (!z.active) return null;
+  const [lx, ly] = canvasToLogical(dpx, dpy);
+  const pts = handlePositionsDest(z);
+  for (let i = 0; i < pts.length; i++) {
+    const [hx, hy] = pts[i];
+    const dx = lx - hx, dy = ly - hy;
+    if (dx * dx + dy * dy <= HANDLE_HIT ** 2) return HANDLE_IDS[i];
+  }
+  return null;
+}
+
+function insideContentRect(ax, ay) {
+  const z = contentRectSource();
+  return z.active && ax >= z.x && ax <= z.x + z.w && ay >= z.y && ay <= z.y + z.h;
+}
+
+function hitStretchEdge(dpx, dpy) {
+  const [lx, ly] = canvasToLogical(dpx, dpy);
+  const s = ninePatch.flexInsets;
+  const yTop = mapY(s.top, patchH);
+  const yBot = mapY(imgH - s.bottom, patchH);
+  const xLeft = mapX(s.left, patchW);
+  const xRight = mapX(imgW - s.right, patchW);
+  const tol = EDGE_HIT_PX / scaleEdit;
+  if (Math.abs(ly - yTop) < tol) return 'top';
+  if (Math.abs(ly - yBot) < tol) return 'bottom';
+  if (Math.abs(lx - xLeft) < tol) return 'left';
+  if (Math.abs(lx - xRight) < tol) return 'right';
+  return null;
+}
+
+/** Content inset rect edges (excluding corners — handles win there). */
+function hitContentEdge(z, dpx, dpy) {
+  if (!z.active || z.w < 1 || z.h < 1) return null;
+  const d = mapRectToDest(z, patchW, patchH);
+  const [lx, ly] = canvasToLogical(dpx, dpy);
+  const edgeTol = EDGE_HIT_PX / scaleEdit;
+  const cornerEx = (HANDLE_HIT + EDGE_HIT_PX + 2) / scaleEdit;
+  const x0 = d.x;
+  const x1 = d.x + d.w;
+  const y0 = d.y;
+  const y1 = d.y + d.h;
+  const minSpan = cornerEx * 2 + edgeTol;
+  const withinX = d.w >= minSpan ? lx >= x0 + cornerEx && lx <= x1 - cornerEx : lx >= x0 && lx <= x1;
+  const withinY = d.h >= minSpan ? ly >= y0 + cornerEx && ly <= y1 - cornerEx : ly >= y0 && ly <= y1;
+  if (Math.abs(ly - y0) < edgeTol && withinX) return 'n';
+  if (Math.abs(ly - y1) < edgeTol && withinX) return 's';
+  if (Math.abs(lx - x0) < edgeTol && withinY) return 'w';
+  if (Math.abs(lx - x1) < edgeTol && withinY) return 'e';
+  return null;
+}
+
+function applyContentEdgeDrag(orig, edge, ax, ay, startAX, startAY) {
+  const MIN = CONTENT_PAD_MIN_INNER;
+  const dx = ax - startAX;
+  const dy = ay - startAY;
+  const p = ninePatch.contentInsets;
+  let left = orig.left;
+  let top = orig.top;
+  let right = orig.right;
+  let bottom = orig.bottom;
+  if (edge === 'n') {
+    top = Math.round(clamp(orig.top + dy, 0, imgH - orig.bottom - MIN));
+  } else if (edge === 's') {
+    bottom = Math.round(clamp(orig.bottom - dy, 0, imgH - orig.top - MIN));
+  } else if (edge === 'w') {
+    left = Math.round(clamp(orig.left + dx, 0, imgW - orig.right - MIN));
+  } else if (edge === 'e') {
+    right = Math.round(clamp(orig.right - dx, 0, imgW - orig.left - MIN));
+  }
+  p.left = left;
+  p.top = top;
+  p.right = right;
+  p.bottom = bottom;
+  clampContentInsets();
+}
+
+function applyStretchEdgeDrag(edge, ax, ay) {
+  const s = ninePatch.flexInsets;
+  if (edge === 'top') s.top = Math.round(clamp(ay, 0, imgH - s.bottom - MID_MIN));
+  if (edge === 'bottom') s.bottom = Math.round(clamp(imgH - ay, 0, imgH - s.top - MID_MIN));
+  if (edge === 'left') s.left = Math.round(clamp(ax, 0, imgW - s.right - MID_MIN));
+  if (edge === 'right') s.right = Math.round(clamp(imgW - ax, 0, imgW - s.left - MID_MIN));
+}
+
+canvasEdit.addEventListener('mousedown', onDown);
+canvasEdit.addEventListener('mousemove', onMove);
+canvasEdit.addEventListener('mouseup', onUp);
+canvasEdit.addEventListener('mouseleave', onUp);
+
+const editCanvasWrap = document.getElementById('edit-canvas-wrap');
+editCanvasWrap.addEventListener(
+  'wheel',
+  (e) => {
+    if (!imgEl) return;
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    const wrap = editCanvasWrap;
+    const rect = wrap.getBoundingClientRect();
+    const ax = e.clientX - rect.left + wrap.scrollLeft;
+    const ay = e.clientY - rect.top + wrap.scrollTop;
+    const sw0 = wrap.scrollWidth;
+    const sh0 = wrap.scrollHeight;
+    const oldZoom = editZoom;
+    const factor = e.deltaY < 0 ? EDIT_ZOOM_STEP : 1 / EDIT_ZOOM_STEP;
+    editZoom = clamp(editZoom * factor, EDIT_ZOOM_MIN, EDIT_ZOOM_MAX);
+    if (Math.abs(editZoom - oldZoom) < 1e-6) return;
+    fitCanvases();
+    render();
+    requestAnimationFrame(() => {
+      const rect2 = wrap.getBoundingClientRect();
+      const sw1 = wrap.scrollWidth;
+      const sh1 = wrap.scrollHeight;
+      if (sw0 > 0 && sh0 > 0 && sw1 > 0 && sh1 > 0) {
+        const rx = ax / sw0;
+        const ry = ay / sh0;
+        wrap.scrollLeft = Math.max(0, rx * sw1 - (e.clientX - rect2.left));
+        wrap.scrollTop = Math.max(0, ry * sh1 - (e.clientY - rect2.top));
+      }
+    });
+  },
+  { passive: false },
+);
+editCanvasWrap.addEventListener('dblclick', (e) => {
+  if (!imgEl || editZoom === 1) return;
+  e.preventDefault();
+  editZoom = 1;
+  fitCanvases();
+  render();
+});
+
+function canvasXY(e) {
+  const r = canvasEdit.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+function toActual(dpx, dpy) {
+  const [lx, ly] = canvasToLogical(dpx, dpy);
+  return [invMapX(lx, patchW), invMapY(ly, patchH)];
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function onDown(e) {
+  if (!imgEl) return;
+  e.preventDefault();
+  const [dpx, dpy] = canvasXY(e);
+  const [ax, ay] = toActual(dpx, dpy);
+
+  if (activeZone === 'stretch') {
+    const edge = hitStretchEdge(dpx, dpy);
+    if (edge) drag = { mode: 'stretch-edge', edge };
+    return;
+  }
+
+  const z = contentRectSource();
+  const handle = hitHandle(z, dpx, dpy);
+  if (handle) {
+    const p = ninePatch.contentInsets;
+    drag = {
+      mode: 'resize',
+      handle,
+      startAX: ax,
+      startAY: ay,
+      orig: { left: p.left, top: p.top, right: p.right, bottom: p.bottom },
+    };
+    return;
+  }
+  const cEdge = hitContentEdge(z, dpx, dpy);
+  if (cEdge) {
+    const p = ninePatch.contentInsets;
+    drag = {
+      mode: 'content-edge',
+      edge: cEdge,
+      startAX: ax,
+      startAY: ay,
+      orig: { left: p.left, top: p.top, right: p.right, bottom: p.bottom },
+    };
+    return;
+  }
+  if (insideContentRect(ax, ay)) {
+    const p = ninePatch.contentInsets;
+    drag = {
+      mode: 'move',
+      startAX: ax,
+      startAY: ay,
+      orig: { left: p.left, top: p.top, right: p.right, bottom: p.bottom },
+    };
+    return;
+  }
+  drag = { mode: 'draw', startAX: ax, startAY: ay };
+  ninePatch.contentInsets.active = true;
+  ninePatch.contentInsets.left = Math.round(clamp(ax, 0, imgW));
+  ninePatch.contentInsets.top = Math.round(clamp(ay, 0, imgH));
+  ninePatch.contentInsets.right = imgW - ninePatch.contentInsets.left;
+  ninePatch.contentInsets.bottom = imgH - ninePatch.contentInsets.top;
+  render();
+}
+
+function onMove(e) {
+  if (!imgEl) return;
+  const [dpx, dpy] = canvasXY(e);
+  const [ax, ay] = toActual(dpx, dpy);
+
+  if (!drag) {
+    updateCursor(dpx, dpy, ax, ay);
+    return;
+  }
+
+  if (drag.mode === 'stretch-edge') {
+    applyStretchEdgeDrag(drag.edge, ax, ay);
+    clampFlexInsets(ninePatch.flexInsets);
+    render();
+    return;
+  }
+
+  if (drag.mode === 'content-edge') {
+    applyContentEdgeDrag(drag.orig, drag.edge, ax, ay, drag.startAX, drag.startAY);
+    render();
+    return;
+  }
+
+  const p = ninePatch.contentInsets;
+  if (drag.mode === 'draw') {
+    const x = Math.min(drag.startAX, ax);
+    const y = Math.min(drag.startAY, ay);
+    const tw = Math.abs(ax - drag.startAX);
+    const th = Math.abs(ay - drag.startAY);
+    const left = Math.round(clamp(x, 0, imgW));
+    const top = Math.round(clamp(y, 0, imgH));
+    const iw = Math.round(Math.min(tw, imgW - left));
+    const ih = Math.round(Math.min(th, imgH - top));
+    p.left = left;
+    p.top = top;
+    p.right = imgW - left - iw;
+    p.bottom = imgH - top - ih;
+    clampContentInsets();
+  }
+  if (drag.mode === 'move') {
+    const o = drag.orig;
+    const w = imgW - o.left - o.right;
+    const h = imgH - o.top - o.bottom;
+    const dx = ax - drag.startAX;
+    const dy = ay - drag.startAY;
+    const nl = Math.round(clamp(o.left + dx, 0, imgW - w));
+    const nt = Math.round(clamp(o.top + dy, 0, imgH - h));
+    p.left = nl;
+    p.top = nt;
+    p.right = imgW - nl - w;
+    p.bottom = imgH - nt - h;
+  }
+  if (drag.mode === 'resize') {
+    applyContentPaddingResize(drag.orig, drag.handle, ax - drag.startAX, ay - drag.startAY);
+  }
+  render();
+}
+
+function onUp() {
+  if (drag) scheduleSaveZoneState();
+  drag = null;
+}
+
+function applyContentPaddingResize(orig, handle, dx, dy) {
+  let x = orig.left;
+  let y = orig.top;
+  let w = imgW - orig.left - orig.right;
+  let h = imgH - orig.top - orig.bottom;
+  const MIN = CONTENT_PAD_MIN_INNER;
+  if (handle.includes('e')) w = Math.max(MIN, w + dx);
+  if (handle.includes('s')) h = Math.max(MIN, h + dy);
+  if (handle.includes('w')) {
+    const nw = Math.max(MIN, w - dx);
+    x += w - nw;
+    w = nw;
+  }
+  if (handle.includes('n')) {
+    const nh = Math.max(MIN, h - dy);
+    y += h - nh;
+    h = nh;
+  }
+  x = clamp(x, 0, imgW - MIN);
+  y = clamp(y, 0, imgH - MIN);
+  w = Math.max(MIN, Math.min(w, imgW - x));
+  h = Math.max(MIN, Math.min(h, imgH - y));
+  const p = ninePatch.contentInsets;
+  p.left = Math.round(x);
+  p.top = Math.round(y);
+  p.right = Math.round(imgW - x - w);
+  p.bottom = Math.round(imgH - y - h);
+  clampContentInsets();
+}
+
+function updateCursor(dpx, dpy, ax, ay) {
+  if (activeZone === 'stretch') {
+    const edge = hitStretchEdge(dpx, dpy);
+    if (edge === 'top' || edge === 'bottom') canvasEdit.style.cursor = 'ns-resize';
+    else if (edge === 'left' || edge === 'right') canvasEdit.style.cursor = 'ew-resize';
+    else canvasEdit.style.cursor = 'default';
+    return;
+  }
+  const z = contentRectSource();
+  const h = hitHandle(z, dpx, dpy);
+  if (h) canvasEdit.style.cursor = HANDLE_CURSORS[h];
+  else {
+    const ce = hitContentEdge(z, dpx, dpy);
+    if (ce === 'n' || ce === 's') canvasEdit.style.cursor = 'ns-resize';
+    else if (ce === 'w' || ce === 'e') canvasEdit.style.cursor = 'ew-resize';
+    else if (insideContentRect(ax, ay)) canvasEdit.style.cursor = 'move';
+    else canvasEdit.style.cursor = 'crosshair';
+  }
+}
+
+function setZone(name) {
+  activeZone = name;
+  document.getElementById('tab-stretch').classList.toggle('tab-active', name === 'stretch');
+  document.getElementById('tab-content').classList.toggle('tab-active', name === 'content');
+  document.getElementById('tab-stretch').setAttribute('aria-selected', name === 'stretch');
+  document.getElementById('tab-content').setAttribute('aria-selected', name === 'content');
+  scheduleSaveZoneState();
+  render();
+}
+
+function drawSnapshotContentRectSized(oc, z, lw, ow, oh) {
+  if (!z || !z.active || z.w < 1 || z.h < 1) return;
+  const d = mapRectToDest(z, ow, oh);
+  const c = COLORS.content;
+  oc.fillStyle = c + '38';
+  oc.fillRect(d.x, d.y, d.w, d.h);
+  oc.strokeStyle = c;
+  oc.lineWidth = Math.max(lw, 2);
+  oc.setLineDash([6, 4]);
+  oc.strokeRect(d.x + lw / 2, d.y + lw / 2, d.w - lw, d.h - lw);
+  oc.setLineDash([]);
+}
+
+function generateSnapshot() {
+  if (!imgEl) return;
+
+  const btn = document.getElementById('btn-export');
+  btn.disabled = true;
+  btn.textContent = 'Exporting…';
+
+  const { pw, ph } = computePatchSize();
+  const off = document.createElement('canvas');
+  off.width = pw;
+  off.height = ph;
+  const oc = off.getContext('2d');
+
+  tileNinePatchToRect(oc, imgEl, 0, 0, pw, ph, ninePatch.flexInsets);
+
+  const lw = Math.max(2, Math.round(imgW / 200));
+  const txt = document.getElementById('preview-text').value;
+
+  if (activeZone === 'stretch') {
+    drawStretch9PatchSized(oc, ninePatch.flexInsets, pw, ph, true);
+    drawStretchInsetLabelsSized(oc, ninePatch.flexInsets, pw, ph);
+  } else {
+    const cr = contentRectSource();
+    drawSnapshotContentRectSized(oc, cr, lw, pw, ph);
+    drawContentPaddingLabelsSized(oc, pw, ph);
+  }
+
+  drawContentPreviewTextSized(oc, contentRectSource(), txt, pw, ph);
+
+  off.toBlob((blob) => {
+    blob.arrayBuffer().then((buf) => {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: 'create-snapshot',
+            bytes: Array.from(new Uint8Array(buf)),
+            width: pw,
+            height: ph,
+          },
+        },
+        '*',
+      );
+    });
+  }, 'image/png');
+}
+
+function onSnapshotDone() {
+  resetExportButton();
+}
+
+function resetExportButton() {
+  const btn = document.getElementById('btn-export');
+  if (!btn || !imgEl) return;
+  btn.disabled = false;
+  btn.textContent = 'Export to Figma';
+}
+
+function showStatus(msg, isErr) {
+  const box = document.getElementById('status-box');
+  box.textContent = msg;
+  box.className = isErr ? 'err' : '';
+}
+function hideStatus() {
+  document.getElementById('status-box').className = 'hidden';
+}
+
+document.getElementById('preview-text').addEventListener('input', () => {
+  scheduleSaveZoneState();
+  refreshPreviewOnly();
+});
+
+</script>
+</body>
+</html>
