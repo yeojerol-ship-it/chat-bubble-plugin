@@ -1,4 +1,4 @@
-figma.showUI(__html__, { width: 580, height: 520, title: 'Chat Bubble Zones' });
+figma.showUI(__html__, { width: 780, height: 740, title: 'Chat Bubble Zones' });
 
 let previewDebounce: ReturnType<typeof setTimeout> | null = null;
 let previewGeneration = 0;

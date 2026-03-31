@@ -60,7 +60,7 @@ body {
 }
 
 #left-column {
-  width: 240px;
+  width: 380px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -73,8 +73,8 @@ body {
   flex: 1;
   min-height: 80px;
   position: relative;
-  margin: 0 12px;
-  padding: 10px;
+  margin: 0 16px;
+  padding: 14px;
   border-radius: var(--radius-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
@@ -100,8 +100,8 @@ body {
 }
 
 .tab-mode-hint {
-  margin: 24px 4px 0;
-  padding: 0 6px;
+  margin: 26px 6px 0;
+  padding: 0 8px;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -123,25 +123,17 @@ body {
 
 .bubble-switcher {
   flex-shrink: 0;
-  margin: 0 10px 8px;
+  margin: 0 14px 10px;
 }
 .bubble-switcher.hidden {
   display: none;
 }
-.bubble-switcher-label {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin: 0 2px 6px;
-}
 .bubble-switcher-scroll {
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
-  padding: 2px 2px 6px;
+  padding: 4px 4px 8px;
   -webkit-overflow-scrolling: touch;
 }
 .bubble-peer {
@@ -149,8 +141,9 @@ body {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
-  padding: 5px 10px 5px 6px;
+  justify-content: center;
+  gap: 0;
+  padding: 4px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
   background: var(--bg-well);
@@ -158,26 +151,28 @@ body {
   font-family: inherit;
   cursor: pointer;
   font-size: 10px;
-  max-width: 220px;
-  text-align: left;
+  text-align: center;
   transition: border-color 0.12s var(--ease), background 0.12s var(--ease), color 0.12s var(--ease);
 }
 .bubble-peer-thumb {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
-  border-radius: 5px;
+  border-radius: 4px;
   background: var(--bg-well-mid);
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.06);
   pointer-events: none;
+  display: block;
 }
-.bubble-peer-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
+.bubble-peer-placeholder {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  background: var(--bg-well-mid);
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-sizing: border-box;
 }
 .bubble-peer:hover {
   border-color: rgba(255, 255, 255, 0.12);
@@ -189,22 +184,6 @@ body {
   color: var(--text-primary);
   box-shadow: 0 0 0 1px rgba(64, 156, 255, 0.12);
 }
-.bubble-peer-name {
-  font-weight: 600;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 140px;
-}
-.bubble-peer-size {
-  font-size: 9px;
-  color: var(--text-tertiary);
-  font-variant-numeric: tabular-nums;
-}
-.bubble-peer.bubble-peer-active .bubble-peer-size {
-  color: var(--text-secondary);
-}
 
 #preview-column {
   flex: 1;
@@ -215,18 +194,6 @@ body {
   background: var(--bg-app);
 }
 
-#preview-column-header {
-  flex-shrink: 0;
-  padding: 10px 16px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-bottom: 1px solid var(--border-subtle);
-  background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-app) 100%);
-}
-
 #preview-canvas-wrap {
   flex: 1;
   min-height: 0;
@@ -235,7 +202,7 @@ body {
   align-items: center;
   justify-content: center;
   overflow: auto;
-  padding: 12px 12px 16px;
+  padding: 24px 24px 28px;
   box-sizing: border-box;
   background:
     radial-gradient(ellipse 80% 60% at 50% 40%, rgba(64, 156, 255, 0.06) 0%, transparent 55%),
@@ -256,14 +223,14 @@ body {
 
 #tabs {
   flex-shrink: 0;
-  padding: 14px 12px 12px;
+  padding: 18px 16px 14px;
   background: var(--bg-panel);
 }
 
 .tabs-inner {
   display: flex;
-  padding: 3px;
-  gap: 2px;
+  padding: 4px;
+  gap: 3px;
   border-radius: var(--radius-md);
   background: var(--bg-well);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
@@ -271,7 +238,7 @@ body {
 
 .tab {
   flex: 1;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -299,10 +266,10 @@ body {
 
 #controls {
   flex-shrink: 0;
-  padding: 14px 12px 16px;
+  padding: 20px 16px 22px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-panel);
 }
@@ -314,12 +281,12 @@ body {
   color: var(--text-tertiary);
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 #preview-text {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 14px;
   font-size: 13px;
   line-height: 1.35;
   border: 1px solid var(--border-subtle);
@@ -342,9 +309,75 @@ body {
   box-shadow: 0 0 0 3px rgba(64, 156, 255, 0.15);
 }
 
+.text-color-field {
+  position: relative;
+  width: 100%;
+}
+#preview-text-color {
+  width: 100%;
+  padding: 11px 46px 11px 14px;
+  font-size: 13px;
+  line-height: 1.35;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-well);
+  color: var(--text-primary);
+  font-family: inherit;
+  user-select: text;
+  transition: border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  box-sizing: border-box;
+}
+#preview-text-color-picker {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: hidden;
+}
+#preview-text-color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+#preview-text-color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+#preview-text-color-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+#preview-text-color-picker:hover {
+  border-color: rgba(255, 255, 255, 0.38);
+}
+#preview-text-color-picker:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+#preview-text-color::placeholder {
+  color: var(--text-tertiary);
+}
+#preview-text-color:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+#preview-text-color:focus {
+  outline: none;
+  border-color: rgba(64, 156, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(64, 156, 255, 0.15);
+}
+
 #btn-export {
   width: 100%;
-  padding: 10px 14px;
+  margin-top: 6px;
+  padding: 12px 16px;
   border-radius: var(--radius-sm);
   border: none;
   background: linear-gradient(180deg, var(--accent) 0%, var(--accent-press) 100%);
@@ -382,7 +415,7 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  padding: 12px;
+  padding: 16px;
 }
 #status-box {
   background: rgba(28, 28, 32, 0.92);
@@ -413,13 +446,12 @@ body {
     <div id="tabs">
       <div class="tabs-inner" role="tablist">
         <button type="button" class="tab tab-active" id="tab-stretch" role="tab" aria-selected="true"
-          onclick="setZone('stretch')">Stretch zone</button>
+          onclick="setZone('stretch')">Stretch</button>
         <button type="button" class="tab" id="tab-content" role="tab" aria-selected="false"
-          onclick="setZone('content')">Content zone</button>
+          onclick="setZone('content')">Content</button>
       </div>
     </div>
     <div id="bubble-switcher" class="bubble-switcher hidden" role="group" aria-label="Bubbles in selection">
-      <div class="bubble-switcher-label">Compare bubbles</div>
       <div id="bubble-switcher-scroll" class="bubble-switcher-scroll"></div>
     </div>
     <div id="edit-canvas-wrap">
@@ -438,11 +470,17 @@ body {
         <label class="field-label" for="preview-text">Preview text</label>
         <input type="text" id="preview-text" value="Yo" placeholder="Type to preview in the bubble…" autocomplete="off" />
       </div>
-      <button type="button" id="btn-export" disabled onclick="generateSnapshot()">Export to Figma</button>
+      <div>
+        <label class="field-label" for="preview-text-color">Text color</label>
+        <div class="text-color-field">
+          <input type="text" id="preview-text-color" value="#000000" placeholder="#000000" autocomplete="off" spellcheck="false" maxlength="7" />
+          <input type="color" id="preview-text-color-picker" value="#000000" aria-label="Pick text color" title="Open color picker" />
+        </div>
+      </div>
+      <button type="button" id="btn-export" disabled onclick="generateSnapshot()">Paste specs to Figma</button>
     </div>
   </aside>
   <section id="preview-column">
-    <div id="preview-column-header">Preview</div>
     <div id="preview-canvas-wrap">
       <div id="bubble-preview-stage">
         <canvas id="canvas-preview"></canvas>
@@ -473,6 +511,37 @@ const VERTICAL_FIT_EPS_PX = 1;
 
 /** TikTok Sans Regular (400) for preview/measure; matches in-app messaging typography when the font loads. */
 const CONTENT_PREVIEW_FONT = `${CONTENT_FONT_PX}px "TikTok Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif`;
+
+const PREVIEW_TEXT_COLOR_DEFAULT = '#000000';
+
+function parseHexColor(s) {
+  if (s == null) return null;
+  const t = String(s).trim();
+  const m = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(t);
+  if (!m) return null;
+  let h = m[1];
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  return `#${h.toLowerCase()}`;
+}
+
+function getPreviewTextColorCSS() {
+  const hexEl = document.getElementById('preview-text-color');
+  const pickEl = document.getElementById('preview-text-color-picker');
+  const fromText = parseHexColor(hexEl && hexEl.value);
+  if (fromText) return fromText;
+  const fromPick = parseHexColor(pickEl && pickEl.value);
+  if (fromPick) return fromPick;
+  return PREVIEW_TEXT_COLOR_DEFAULT;
+}
+
+function applyPreviewTextColorToInputs(hex) {
+  const normalized = parseHexColor(hex) || PREVIEW_TEXT_COLOR_DEFAULT;
+  const hexEl = document.getElementById('preview-text-color');
+  const pickEl = document.getElementById('preview-text-color-picker');
+  if (hexEl) hexEl.value = normalized;
+  if (pickEl) pickEl.value = normalized;
+  return normalized;
+}
 
 function effectiveTextWrapWidth(innerW) {
   return Math.max(8, Math.min(innerW, MAX_TEXT_WIDTH));
@@ -555,8 +624,8 @@ function editCanvasBackingDpr() {
 const PREVIEW_BUBBLE_PAD = 20;
 /** Insets used when fitting the preview canvas inside #preview-canvas-wrap. */
 const PREVIEW_PANEL_PAD_TOP = 24;
-const PREVIEW_PANEL_PAD_X = 16;
-const PREVIEW_PANEL_PAD_BOTTOM = 24;
+const PREVIEW_PANEL_PAD_X = 24;
+const PREVIEW_PANEL_PAD_BOTTOM = 28;
 const EDGE_HIT_PX = 7;
 
 const canvasEdit = document.getElementById('canvas-edit');
@@ -664,9 +733,10 @@ function parseZonePayload(raw) {
   }
 }
 
-function buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText) {
+function buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText, previewTextColor) {
   const fi = flexInsets;
   const ci = contentInsets;
+  const color = parseHexColor(previewTextColor) || PREVIEW_TEXT_COLOR_DEFAULT;
   return JSON.stringify({
     v: 1,
     w,
@@ -686,15 +756,16 @@ function buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText) {
       active: ci.active !== false,
     },
     previewText: previewText != null ? String(previewText) : '',
+    previewTextColor: color,
   });
 }
 
 /**
  * Persist zones: UI iframe `localStorage` is often blocked/ephemeral in Figma; always mirror to `figma.clientStorage` via main thread.
  */
-function writeZoneStateToStorage(nodeId, w, h, flexInsets, contentInsets, previewText) {
+function writeZoneStateToStorage(nodeId, w, h, flexInsets, contentInsets, previewText, previewTextColor) {
   if (!nodeId || !w || !h || w <= 0 || h <= 0) return;
-  const json = buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText);
+  const json = buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText, previewTextColor);
   try {
     localStorage.setItem(zoneStorageKey(nodeId), json);
   } catch (_) {
@@ -730,6 +801,7 @@ function saveZoneState() {
     ninePatch.flexInsets,
     ninePatch.contentInsets,
     document.getElementById('preview-text').value,
+    getPreviewTextColorCSS(),
   );
 }
 
@@ -774,7 +846,9 @@ function renderBubbleSwitcher() {
     btn.type = 'button';
     btn.className = 'bubble-peer' + (p.id === currentNodeId ? ' bubble-peer-active' : '');
     btn.dataset.nodeId = p.id;
-    btn.title = p.name;
+    const tip = `${p.name} (${p.width}\u00d7${p.height})`;
+    btn.title = tip;
+    btn.setAttribute('aria-label', tip);
     if (p.thumbBytes && p.thumbBytes.length > 0) {
       const blob = new Blob([new Uint8Array(p.thumbBytes)], { type: 'image/png' });
       const url = URL.createObjectURL(blob);
@@ -784,18 +858,12 @@ function renderBubbleSwitcher() {
       img.src = url;
       img.alt = '';
       btn.appendChild(img);
+    } else {
+      const ph = document.createElement('span');
+      ph.className = 'bubble-peer-placeholder';
+      ph.setAttribute('aria-hidden', 'true');
+      btn.appendChild(ph);
     }
-    const textCol = document.createElement('span');
-    textCol.className = 'bubble-peer-text';
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'bubble-peer-name';
-    nameSpan.textContent = p.name.length > 24 ? p.name.slice(0, 23) + '\u2026' : p.name;
-    const sizeSpan = document.createElement('span');
-    sizeSpan.className = 'bubble-peer-size';
-    sizeSpan.textContent = `${p.width}\u00d7${p.height}`;
-    textCol.appendChild(nameSpan);
-    textCol.appendChild(sizeSpan);
-    btn.appendChild(textCol);
     btn.addEventListener('click', () => {
       parent.postMessage({ pluginMessage: { type: 'pick-bubble', nodeId: p.id } }, '*');
     });
@@ -823,6 +891,7 @@ function loadPreview(bytes, w, h, nodeId, peers, zoneSnapshot) {
       ninePatch.flexInsets,
       ninePatch.contentInsets,
       document.getElementById('preview-text').value,
+      getPreviewTextColorCSS(),
     );
   }
 
@@ -831,6 +900,9 @@ function loadPreview(bytes, w, h, nodeId, peers, zoneSnapshot) {
     selectionPeers.length > 1 && prevId && prevId !== nid;
   const comparePreviewTextSnapshot = preserveComparePreviewText
     ? document.getElementById('preview-text').value
+    : null;
+  const comparePreviewColorSnapshot = preserveComparePreviewText
+    ? getPreviewTextColorCSS()
     : null;
   const sameNodeAndSize =
     Boolean(imgEl && nid && nid === currentNodeId && w === imgW && h === imgH);
@@ -887,17 +959,32 @@ function loadPreview(bytes, w, h, nodeId, peers, zoneSnapshot) {
     clampContentInsets();
     if (preserveComparePreviewText && comparePreviewTextSnapshot != null) {
       textEl.value = comparePreviewTextSnapshot;
+      if (comparePreviewColorSnapshot != null) applyPreviewTextColorToInputs(comparePreviewColorSnapshot);
     } else if (
       Object.prototype.hasOwnProperty.call(restored, 'previewText') &&
       restored.previewText != null
     ) {
       textEl.value = String(restored.previewText);
     }
+    if (!preserveComparePreviewText || comparePreviewTextSnapshot == null) {
+      if (
+        Object.prototype.hasOwnProperty.call(restored, 'previewTextColor') &&
+        restored.previewTextColor != null
+      ) {
+        applyPreviewTextColorToInputs(restored.previewTextColor);
+      } else {
+        applyPreviewTextColorToInputs(PREVIEW_TEXT_COLOR_DEFAULT);
+      }
+    }
   } else {
     initDefaultZones();
     if (preserveComparePreviewText && comparePreviewTextSnapshot != null) {
       textEl.value = comparePreviewTextSnapshot;
+      if (comparePreviewColorSnapshot != null) applyPreviewTextColorToInputs(comparePreviewColorSnapshot);
     } else if (!textEl.value.trim()) textEl.value = 'Yo';
+    if (!preserveComparePreviewText || comparePreviewTextSnapshot == null) {
+      applyPreviewTextColorToInputs(PREVIEW_TEXT_COLOR_DEFAULT);
+    }
   }
 
   const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
@@ -1127,7 +1214,7 @@ function syncEditCanvasMetrics() {
   patchW = imgEl ? imgW : 100;
   patchH = imgEl ? imgH : 100;
   const editWrap = document.getElementById('edit-canvas-wrap');
-  const pad = 20;
+  const pad = 28;
   const maxWEdit = Math.max(36, editWrap.clientWidth - pad);
   const maxHEdit = Math.max(36, editWrap.clientHeight - pad);
   const scaleEditFit = Math.min(DISPLAY_MAX_SCALE, maxWEdit / patchW, maxHEdit / patchH);
@@ -1475,7 +1562,7 @@ function drawContentPreviewTextSized(ctx, z, text, ow, oh) {
   ctx.font = CONTENT_PREVIEW_FONT;
   const lineH = CONTENT_LINE_HEIGHT_PX;
   ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = 'rgba(0,0,0,0.88)';
+  ctx.fillStyle = getPreviewTextColorCSS();
 
   const naturalLines = wrapTextLines(ctx, t, 1e6);
   let naturalMaxW = 0;
@@ -1926,7 +2013,7 @@ async function generateSnapshot() {
 
   const btn = document.getElementById('btn-export');
   btn.disabled = true;
-  btn.textContent = 'Exporting…';
+  btn.textContent = 'Pasting…';
 
   try {
     const flex = buildExportSnapshotCanvas('flex');
@@ -1962,7 +2049,7 @@ function resetExportButton() {
   const btn = document.getElementById('btn-export');
   if (!btn || !imgEl) return;
   btn.disabled = false;
-  btn.textContent = 'Export to Figma';
+  btn.textContent = 'Paste specs to Figma';
 }
 
 function showStatus(msg, isErr) {
@@ -1978,6 +2065,23 @@ document.getElementById('preview-text').addEventListener('input', () => {
   scheduleSaveZoneState();
   refreshPreviewOnly();
 });
+
+(function wirePreviewTextColor() {
+  const hexEl = document.getElementById('preview-text-color');
+  const pickEl = document.getElementById('preview-text-color-picker');
+  if (!hexEl || !pickEl) return;
+  pickEl.addEventListener('input', () => {
+    hexEl.value = pickEl.value;
+    scheduleSaveZoneState();
+    refreshPreviewOnly();
+  });
+  hexEl.addEventListener('input', () => {
+    const p = parseHexColor(hexEl.value);
+    if (p) pickEl.value = p;
+    scheduleSaveZoneState();
+    refreshPreviewOnly();
+  });
+})();
 
 </script>
 </body>
