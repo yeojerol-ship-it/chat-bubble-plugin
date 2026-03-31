@@ -1025,9 +1025,6 @@ function loadPreview(bytes, w, h, nodeId, peers, zoneSnapshot) {
   const comparePreviewTextSnapshot = preserveComparePreviewText
     ? document.getElementById('preview-text').value
     : null;
-  const comparePreviewColorSnapshot = preserveComparePreviewText
-    ? getPreviewTextColorCSS()
-    : null;
   const sameNodeAndSize =
     Boolean(imgEl && nid && nid === currentNodeId && w === imgW && h === imgH);
 
@@ -1083,32 +1080,26 @@ function loadPreview(bytes, w, h, nodeId, peers, zoneSnapshot) {
     clampContentInsets();
     if (preserveComparePreviewText && comparePreviewTextSnapshot != null) {
       textEl.value = comparePreviewTextSnapshot;
-      if (comparePreviewColorSnapshot != null) applyPreviewTextColorToInputs(comparePreviewColorSnapshot);
     } else if (
       Object.prototype.hasOwnProperty.call(restored, 'previewText') &&
       restored.previewText != null
     ) {
       textEl.value = String(restored.previewText);
     }
-    if (!preserveComparePreviewText || comparePreviewTextSnapshot == null) {
-      if (
-        Object.prototype.hasOwnProperty.call(restored, 'previewTextColor') &&
-        restored.previewTextColor != null
-      ) {
-        applyPreviewTextColorToInputs(restored.previewTextColor);
-      } else {
-        applyPreviewTextColorToInputs(PREVIEW_TEXT_COLOR_DEFAULT);
-      }
+    if (
+      Object.prototype.hasOwnProperty.call(restored, 'previewTextColor') &&
+      restored.previewTextColor != null
+    ) {
+      applyPreviewTextColorToInputs(restored.previewTextColor);
+    } else {
+      applyPreviewTextColorToInputs(PREVIEW_TEXT_COLOR_DEFAULT);
     }
   } else {
     initDefaultZones();
     if (preserveComparePreviewText && comparePreviewTextSnapshot != null) {
       textEl.value = comparePreviewTextSnapshot;
-      if (comparePreviewColorSnapshot != null) applyPreviewTextColorToInputs(comparePreviewColorSnapshot);
     } else if (!textEl.value.trim()) textEl.value = 'Yo';
-    if (!preserveComparePreviewText || comparePreviewTextSnapshot == null) {
-      applyPreviewTextColorToInputs(PREVIEW_TEXT_COLOR_DEFAULT);
-    }
+    applyPreviewTextColorToInputs(PREVIEW_TEXT_COLOR_DEFAULT);
   }
 
   const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
