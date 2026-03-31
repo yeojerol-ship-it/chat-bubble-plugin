@@ -82,6 +82,7 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 0 1px var(--border-subtle);
   overflow: auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
@@ -98,13 +99,26 @@ body {
   border-radius: var(--radius-sm);
 }
 
-.edit-zoom-hint {
-  flex-shrink: 0;
-  padding: 0 12px 8px;
+.tab-mode-hint {
+  margin: 24px 4px 0;
+  padding: 0 6px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   font-size: 10px;
-  color: var(--text-tertiary);
-  line-height: 1.35;
+  line-height: 1.45;
+  font-weight: 400;
   text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+.edit-canvas-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .bubble-switcher {
@@ -203,7 +217,7 @@ body {
 
 #preview-column-header {
   flex-shrink: 0;
-  padding: 14px 20px 10px;
+  padding: 10px 16px 8px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -219,18 +233,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  overflow-x: auto;
-  overflow-y: auto;
-  /* Phone stage starts 80px below header; horizontal scroll keeps left/right screen edges reachable at 120% scale */
-  padding: 80px 12px 24px;
+  justify-content: center;
+  overflow: auto;
+  padding: 12px 12px 16px;
   box-sizing: border-box;
   background:
     radial-gradient(ellipse 80% 60% at 50% 40%, rgba(64, 156, 255, 0.06) 0%, transparent 55%),
     var(--bg-app);
 }
 
-#phone-preview-stage {
+#bubble-preview-stage {
   flex: 0 0 auto;
   line-height: 0;
   border-radius: var(--radius-md);
@@ -398,22 +410,24 @@ body {
 
 <div id="main-split">
   <aside id="left-column">
-    <div id="tabs" role="tablist">
-      <div class="tabs-inner">
+    <div id="tabs">
+      <div class="tabs-inner" role="tablist">
         <button type="button" class="tab tab-active" id="tab-stretch" role="tab" aria-selected="true"
-          onclick="setZone('stretch')">Flex area</button>
+          onclick="setZone('stretch')">Stretch zone</button>
         <button type="button" class="tab" id="tab-content" role="tab" aria-selected="false"
-          onclick="setZone('content')">Content insets</button>
+          onclick="setZone('content')">Content zone</button>
       </div>
     </div>
-    <div class="edit-zoom-hint" id="edit-zoom-hint">⌘/Ctrl + scroll to zoom · double-click to reset</div>
     <div id="bubble-switcher" class="bubble-switcher hidden" role="group" aria-label="Bubbles in selection">
       <div class="bubble-switcher-label">Compare bubbles</div>
       <div id="bubble-switcher-scroll" class="bubble-switcher-scroll"></div>
     </div>
     <div id="edit-canvas-wrap">
-      <div id="edit-canvas-inner">
-        <canvas id="canvas-edit"></canvas>
+      <div class="edit-canvas-stack">
+        <div id="edit-canvas-inner">
+          <canvas id="canvas-edit"></canvas>
+        </div>
+        <p id="tab-mode-hint" class="tab-mode-hint">Determine how this bubble should stretch</p>
       </div>
       <div id="status-overlay">
         <div id="status-box">Loading preview…</div>
@@ -430,8 +444,7 @@ body {
   <section id="preview-column">
     <div id="preview-column-header">Preview</div>
     <div id="preview-canvas-wrap">
-      <!-- Chat screen art: export Figma node 3558-13611 from file uHwTK3KI1XfBG2CsvGGlkY as phone-chat-mockup.png (390×844 logical). -->
-      <div id="phone-preview-stage">
+      <div id="bubble-preview-stage">
         <canvas id="canvas-preview"></canvas>
       </div>
     </div>
@@ -445,7 +458,8 @@ const ninePatch = {
   flexInsets: { top: 0, left: 0, right: 0, bottom: 0, active: true },
   contentInsets: { top: 0, left: 0, right: 0, bottom: 0, active: false },
 };
-const MID_MIN = 4;
+/** Min width/height (logical px) of the stretchable middle between opposing flex guides — i.e. min gap between the two red lines per axis. */
+const MID_MIN = 1;
 const CONTENT_FONT_PX = 16;
 /** 150% line height — matches min inner text height (see CONTENT_INNER_MIN_H). */
 const CONTENT_LINE_HEIGHT_PX = CONTENT_FONT_PX * 1.5;
@@ -486,8 +500,10 @@ let patchH = 0;
 let patchPreviewW = 100;
 let patchPreviewH = 100;
 let scaleEdit = 1;
-/** User zoom on the markup canvas (1 = fit panel). ⌘/Ctrl + scroll. */
-let editZoom = 1;
+/** Default markup zoom after load / reset (220%). ⌘/Ctrl + scroll to adjust. */
+const EDIT_ZOOM_DEFAULT = 2.2;
+/** User zoom on the markup canvas (applied on top of fit-to-panel scale). */
+let editZoom = EDIT_ZOOM_DEFAULT;
 const EDIT_ZOOM_MIN = 1;
 const EDIT_ZOOM_MAX = 8;
 const EDIT_ZOOM_STEP = 1.12;
@@ -511,22 +527,36 @@ const measureCtx = measureCanvas.getContext('2d');
 
 const HANDLE_R = 5;
 const HANDLE_HIT = 8;
+/** Flex (red) guide strokes on the edit canvas — thinner than default for finer placement. */
+const FLEX_GUIDE_LINE_WIDTH_ACTIVE = 1.25;
+const FLEX_GUIDE_LINE_WIDTH_INACTIVE = 0.85;
 /** Never upscale past Figma 1:1 px — only downscale to fit the panel (avoids blurry preview). */
 const DISPLAY_MAX_SCALE = 1;
-/** Internal canvas resolution = CSS size × this (left + right panels); browser scales down for crisp preview). */
-const PREVIEW_CANVAS_PIXEL_SCALE = 3;
-/** Right panel: full phone frame (logical px) + outgoing bubble placement. */
-const PHONE_PREVIEW_W = 390;
-const PHONE_PREVIEW_H = 844;
-const PHONE_PREVIEW_BUBBLE_Y = 115;
-const PHONE_PREVIEW_BUBBLE_MAX_W = 270;
-const PHONE_PREVIEW_BUBBLE_MARGIN_R = 18;
-/** Match #preview-canvas-wrap padding (top offset + gutters for edge visibility). */
-const PREVIEW_PANEL_PAD_TOP = 80;
-const PREVIEW_PANEL_PAD_X = 12;
+/** Markup canvas: supersampling factor before device DPR (see editCanvasBackingDpr). */
+const EDIT_CANVAS_PIXEL_SCALE = 12;
+/** Preview canvas: bitmap px per CSS px (right panel). */
+const PREVIEW_CANVAS_PIXEL_SCALE = 8;
+/** Export annotated snapshots back to Figma at higher density than their inserted frame size. */
+const SNAPSHOT_EXPORT_SCALE = 4;
+
+/**
+ * Backing-store scale for the edit canvas = supersample × clamped window.devicePixelRatio.
+ * Without DPR, Retina still bilinear-upscales the bitmap and the bubble looks soft.
+ */
+function editCanvasBackingDpr() {
+  const w = typeof window !== 'undefined' ? window : null;
+  let raw = w && Number.isFinite(w.devicePixelRatio) && w.devicePixelRatio > 0 ? w.devicePixelRatio : 1;
+  /** Figma’s plugin iframe often reports 1.0 on Retina; floor at 2 so backing store matches real pixels. */
+  if (raw < 2) raw = 2;
+  const dpr = Math.min(raw, 3);
+  return EDIT_CANVAS_PIXEL_SCALE * dpr;
+}
+/** Padding around the bubble inside the preview canvas (logical px, before scalePreview). */
+const PREVIEW_BUBBLE_PAD = 20;
+/** Insets used when fitting the preview canvas inside #preview-canvas-wrap. */
+const PREVIEW_PANEL_PAD_TOP = 24;
+const PREVIEW_PANEL_PAD_X = 16;
 const PREVIEW_PANEL_PAD_BOTTOM = 24;
-/** Scale phone vs “fit in panel” so preview reads larger; overflow scroll shows full width. */
-const PREVIEW_PHONE_SCALE_MULTIPLIER = 1.2;
 const EDGE_HIT_PX = 7;
 
 const canvasEdit = document.getElementById('canvas-edit');
@@ -534,17 +564,18 @@ const canvasPreview = document.getElementById('canvas-preview');
 const ctxEdit = canvasEdit.getContext('2d');
 const ctxPreview = canvasPreview.getContext('2d');
 
-/** DM chat shell — replace with export from Figma 💬 Direct Message (node 3558-13611). */
-const phoneChatMockupImg = new Image();
-phoneChatMockupImg.src = 'phone-chat-mockup.png';
-phoneChatMockupImg.onload = () => {
-  if (imgEl) refreshPreviewOnly();
-};
-
 window.onmessage = (event) => {
   const msg = event.data.pluginMessage;
   if (!msg) return;
-  if (msg.type === 'preview') loadPreview(msg.bytes, msg.width, msg.height, msg.nodeId, msg.selectionPeers);
+  if (msg.type === 'preview')
+    loadPreview(
+      msg.bytes,
+      msg.width,
+      msg.height,
+      msg.nodeId,
+      msg.selectionPeers,
+      msg.zoneSnapshot,
+    );
   if (msg.type === 'needs-selection') {
     flushSaveZoneState();
     selectionPeers = [];
@@ -582,7 +613,7 @@ function clearPreview(message) {
   patchH = 0;
   patchPreviewW = 100;
   patchPreviewH = 100;
-  editZoom = 1;
+  editZoom = EDIT_ZOOM_DEFAULT;
   currentNodeId = '';
   selectionPeers = [];
   renderBubbleSwitcher();
@@ -612,11 +643,64 @@ function restoreZoneState(nodeId, w, h) {
     const raw = localStorage.getItem(zoneStorageKey(nodeId));
     if (!raw) return null;
     const d = JSON.parse(raw);
-    if (d.w !== w || d.h !== h || !d.flexInsets || !d.contentInsets) return null;
+    if (!d.flexInsets || !d.contentInsets) return null;
+    /** Allow w/h drift (Figma rounding or small resizes); clampFlexInsets / clampContentInsets fix bounds. */
     return d;
   } catch {
     return null;
   }
+}
+
+/** Parse zone JSON from main-thread preview (`zoneSnapshot`) or elsewhere. */
+function parseZonePayload(raw) {
+  if (raw == null || raw === '') return null;
+  const s = typeof raw === 'string' ? raw : String(raw);
+  try {
+    const d = JSON.parse(s);
+    if (!d.flexInsets || !d.contentInsets) return null;
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText) {
+  const fi = flexInsets;
+  const ci = contentInsets;
+  return JSON.stringify({
+    v: 1,
+    w,
+    h,
+    flexInsets: {
+      top: fi.top,
+      left: fi.left,
+      right: fi.right,
+      bottom: fi.bottom,
+      active: fi.active !== false,
+    },
+    contentInsets: {
+      top: ci.top,
+      left: ci.left,
+      right: ci.right,
+      bottom: ci.bottom,
+      active: ci.active !== false,
+    },
+    previewText: previewText != null ? String(previewText) : '',
+  });
+}
+
+/**
+ * Persist zones: UI iframe `localStorage` is often blocked/ephemeral in Figma; always mirror to `figma.clientStorage` via main thread.
+ */
+function writeZoneStateToStorage(nodeId, w, h, flexInsets, contentInsets, previewText) {
+  if (!nodeId || !w || !h || w <= 0 || h <= 0) return;
+  const json = buildZoneStateJSON(w, h, flexInsets, contentInsets, previewText);
+  try {
+    localStorage.setItem(zoneStorageKey(nodeId), json);
+  } catch (_) {
+    /* ignore */
+  }
+  parent.postMessage({ pluginMessage: { type: 'persist-zones', nodeId, json } }, '*');
 }
 
 function scheduleSaveZoneState() {
@@ -637,35 +721,16 @@ function flushSaveZoneState() {
 }
 
 function saveZoneState() {
-  if (!currentNodeId || !imgEl || !imgW || !imgH) return;
-  try {
-    const fi = ninePatch.flexInsets;
-    const ci = ninePatch.contentInsets;
-    localStorage.setItem(
-      zoneStorageKey(currentNodeId),
-      JSON.stringify({
-        w: imgW,
-        h: imgH,
-        flexInsets: {
-          top: fi.top,
-          left: fi.left,
-          right: fi.right,
-          bottom: fi.bottom,
-          active: fi.active !== false,
-        },
-        contentInsets: {
-          top: ci.top,
-          left: ci.left,
-          right: ci.right,
-          bottom: ci.bottom,
-          active: ci.active !== false,
-        },
-        previewText: document.getElementById('preview-text').value,
-      }),
-    );
-  } catch {
-    /* quota / private mode */
-  }
+  /** Don’t require imgEl — markup is logical (imgW/imgH); during PNG decode imgEl may be null or the previous bubble. */
+  if (!currentNodeId || !imgW || !imgH) return;
+  writeZoneStateToStorage(
+    currentNodeId,
+    imgW,
+    imgH,
+    ninePatch.flexInsets,
+    ninePatch.contentInsets,
+    document.getElementById('preview-text').value,
+  );
 }
 
 function normalizeSelectionPeers(peers, fallbackId, w, h) {
@@ -738,10 +803,35 @@ function renderBubbleSwitcher() {
   }
 }
 
-function loadPreview(bytes, w, h, nodeId, peers) {
-  const nid = typeof nodeId === 'string' ? nodeId : '';
+function loadPreview(bytes, w, h, nodeId, peers, zoneSnapshot) {
+  const nid = nodeId != null && nodeId !== '' ? String(nodeId) : '';
+
+  if (saveZonesTimer) {
+    clearTimeout(saveZonesTimer);
+    saveZonesTimer = null;
+  }
+
+  /** Snapshot outgoing bubble *first* — then write by explicit id/size so A’s flex survives A→B→A. */
+  const prevId = currentNodeId;
+  const prevW = imgW;
+  const prevH = imgH;
+  if (prevId && prevW > 0 && prevH > 0) {
+    writeZoneStateToStorage(
+      prevId,
+      prevW,
+      prevH,
+      ninePatch.flexInsets,
+      ninePatch.contentInsets,
+      document.getElementById('preview-text').value,
+    );
+  }
+
   selectionPeers = normalizeSelectionPeers(peers, nid, w, h);
-  flushSaveZoneState();
+  const preserveComparePreviewText =
+    selectionPeers.length > 1 && prevId && prevId !== nid;
+  const comparePreviewTextSnapshot = preserveComparePreviewText
+    ? document.getElementById('preview-text').value
+    : null;
   const sameNodeAndSize =
     Boolean(imgEl && nid && nid === currentNodeId && w === imgW && h === imgH);
 
@@ -752,7 +842,7 @@ function loadPreview(bytes, w, h, nodeId, peers) {
     next.onload = () => {
       URL.revokeObjectURL(url);
       imgEl = next;
-      editZoom = 1;
+      editZoom = EDIT_ZOOM_DEFAULT;
       fitCanvases();
       hideStatus();
       document.getElementById('btn-export').disabled = false;
@@ -767,47 +857,63 @@ function loadPreview(bytes, w, h, nodeId, peers) {
     return;
   }
 
+  /**
+   * Switch logical bubble immediately (before PNG decode). If we only updated imgW/imgH in onload while
+   * currentNodeId stayed the old id, debounced saves could write bubble A’s zones under bubble B’s w×h
+   * and wipe per-bubble markup in localStorage.
+   */
   imgW = w;
   imgH = h;
+  currentNodeId = nid;
+  let restored = parseZonePayload(zoneSnapshot);
+  if (!restored) restored = restoreZoneState(nid, w, h);
+  const textEl = document.getElementById('preview-text');
+  if (restored) {
+    ninePatch.flexInsets = {
+      top: restored.flexInsets.top,
+      left: restored.flexInsets.left,
+      right: restored.flexInsets.right,
+      bottom: restored.flexInsets.bottom,
+      active: restored.flexInsets.active !== false,
+    };
+    ninePatch.contentInsets = {
+      top: restored.contentInsets.top,
+      left: restored.contentInsets.left,
+      right: restored.contentInsets.right,
+      bottom: restored.contentInsets.bottom,
+      active: restored.contentInsets.active !== false,
+    };
+    clampFlexInsets(ninePatch.flexInsets);
+    clampContentInsets();
+    if (preserveComparePreviewText && comparePreviewTextSnapshot != null) {
+      textEl.value = comparePreviewTextSnapshot;
+    } else if (
+      Object.prototype.hasOwnProperty.call(restored, 'previewText') &&
+      restored.previewText != null
+    ) {
+      textEl.value = String(restored.previewText);
+    }
+  } else {
+    initDefaultZones();
+    if (preserveComparePreviewText && comparePreviewTextSnapshot != null) {
+      textEl.value = comparePreviewTextSnapshot;
+    } else if (!textEl.value.trim()) textEl.value = 'Yo';
+  }
+
   const blob = new Blob([new Uint8Array(bytes)], { type: 'image/png' });
   const url = URL.createObjectURL(blob);
   const next = new Image();
   next.onload = () => {
     URL.revokeObjectURL(url);
     imgEl = next;
-    editZoom = 1;
-    currentNodeId = nid;
-    const restored = restoreZoneState(nid, w, h);
-    const textEl = document.getElementById('preview-text');
-    if (restored) {
-      ninePatch.flexInsets = {
-        top: restored.flexInsets.top,
-        left: restored.flexInsets.left,
-        right: restored.flexInsets.right,
-        bottom: restored.flexInsets.bottom,
-        active: restored.flexInsets.active !== false,
-      };
-      ninePatch.contentInsets = {
-        top: restored.contentInsets.top,
-        left: restored.contentInsets.left,
-        right: restored.contentInsets.right,
-        bottom: restored.contentInsets.bottom,
-        active: restored.contentInsets.active !== false,
-      };
-      clampFlexInsets(ninePatch.flexInsets);
-      clampContentInsets();
-      if (Object.prototype.hasOwnProperty.call(restored, 'previewText') && restored.previewText != null) {
-        textEl.value = String(restored.previewText);
-      }
-    } else {
-      initDefaultZones();
-      if (!textEl.value.trim()) textEl.value = 'Yo';
-    }
+    editZoom = EDIT_ZOOM_DEFAULT;
     fitCanvases();
     hideStatus();
     document.getElementById('btn-export').disabled = false;
     renderBubbleSwitcher();
     render();
+    /** Persist clamped zones + current Figma w×h after decode so a quick switch still hit disk. */
+    saveZoneState();
   };
   next.onerror = () => {
     URL.revokeObjectURL(url);
@@ -987,24 +1093,6 @@ function computePatchSize() {
 
   pw = Math.max(pw, L + R + 2);
   ph = Math.max(ph, T + B + 2);
-  /** Cap bubble width for phone preview; grow height so text still fits when wrapped narrower. */
-  if (pw > PHONE_PREVIEW_BUBBLE_MAX_W) {
-    pw = Math.max(L + R + 2, Math.min(pw, PHONE_PREVIEW_BUBBLE_MAX_W));
-    const tcap = (document.getElementById('preview-text')?.value || '').trim();
-    if (z.active && z.w >= 2 && z.h >= 2 && tcap && midW >= 1 && midH >= 1) {
-      for (let j = 0; j < 120; j++) {
-        const d = mapRectToDestRounded(z, pw, ph);
-        const innerW = Math.max(0, d.w);
-        const innerH = Math.max(0, d.h);
-        const hNeed = previewTextBlockHeightPx(tcap, innerW);
-        if (hNeed <= innerH + VERTICAL_FIT_EPS_PX) break;
-        const midOut = Math.max(1, ph - T - B);
-        const factor = (innerH + (hNeed - innerH) + 8) / Math.max(1, innerH);
-        ph = Math.ceil(T + B + midOut * Math.max(1.02, factor));
-        ph = Math.min(ph, imgH * 14);
-      }
-    }
-  }
   return { pw, ph };
 }
 
@@ -1012,21 +1100,27 @@ function computePatchSize() {
 function tileNinePatchToRect(ctx, img, x, y, dw, dh, s) {
   const L = s.left, R = s.right, T = s.top, B = s.bottom;
   const sw = img.width, sh = img.height;
-  const mw = sw - L - R, mh = sh - T - B;
+  const logicalSw = Math.max(1, imgW || sw);
+  const logicalSh = Math.max(1, imgH || sh);
+  const srcL = Math.max(0, Math.min(sw, Math.round((L / logicalSw) * sw)));
+  const srcR = Math.max(0, Math.min(sw - srcL, Math.round((R / logicalSw) * sw)));
+  const srcT = Math.max(0, Math.min(sh, Math.round((T / logicalSh) * sh)));
+  const srcB = Math.max(0, Math.min(sh - srcT, Math.round((B / logicalSh) * sh)));
+  const mw = sw - srcL - srcR, mh = sh - srcT - srcB;
   const dwMid = dw - L - R, dhMid = dh - T - B;
   if (mw < 1 || mh < 1 || dwMid < 1 || dhMid < 1) {
     ctx.drawImage(img, x, y, dw, dh);
     return;
   }
-  ctx.drawImage(img, 0, 0, L, T, x, y, L, T);
-  ctx.drawImage(img, L, 0, mw, T, x + L, y, dwMid, T);
-  ctx.drawImage(img, sw - R, 0, R, T, x + dw - R, y, R, T);
-  ctx.drawImage(img, 0, T, L, mh, x, y + T, L, dhMid);
-  ctx.drawImage(img, L, T, mw, mh, x + L, y + T, dwMid, dhMid);
-  ctx.drawImage(img, sw - R, T, R, mh, x + dw - R, y + T, R, dhMid);
-  ctx.drawImage(img, 0, sh - B, L, B, x, y + dh - B, L, B);
-  ctx.drawImage(img, L, sh - B, mw, B, x + L, y + dh - B, dwMid, B);
-  ctx.drawImage(img, sw - R, sh - B, R, B, x + dw - R, y + dh - B, R, B);
+  ctx.drawImage(img, 0, 0, srcL, srcT, x, y, L, T);
+  ctx.drawImage(img, srcL, 0, mw, srcT, x + L, y, dwMid, T);
+  ctx.drawImage(img, sw - srcR, 0, srcR, srcT, x + dw - R, y, R, T);
+  ctx.drawImage(img, 0, srcT, srcL, mh, x, y + T, L, dhMid);
+  ctx.drawImage(img, srcL, srcT, mw, mh, x + L, y + T, dwMid, dhMid);
+  ctx.drawImage(img, sw - srcR, srcT, srcR, mh, x + dw - R, y + T, R, dhMid);
+  ctx.drawImage(img, 0, sh - srcB, srcL, srcB, x, y + dh - B, L, B);
+  ctx.drawImage(img, srcL, sh - srcB, mw, srcB, x + L, y + dh - B, dwMid, B);
+  ctx.drawImage(img, sw - srcR, sh - srcB, srcR, srcB, x + dw - R, y + dh - B, R, B);
 }
 
 function syncEditCanvasMetrics() {
@@ -1038,24 +1132,15 @@ function syncEditCanvasMetrics() {
   const maxHEdit = Math.max(36, editWrap.clientHeight - pad);
   const scaleEditFit = Math.min(DISPLAY_MAX_SCALE, maxWEdit / patchW, maxHEdit / patchH);
   scaleEdit = scaleEditFit * editZoom;
-  const cssW = Math.max(1, Math.round(patchW * scaleEdit));
-  const cssH = Math.max(1, Math.round(patchH * scaleEdit));
-  editCanvasDpr = PREVIEW_CANVAS_PIXEL_SCALE;
-  canvasEdit.style.width = `${cssW}px`;
-  canvasEdit.style.height = `${cssH}px`;
-  canvasEdit.width = Math.round(cssW * editCanvasDpr);
-  canvasEdit.height = Math.round(cssH * editCanvasDpr);
-  updateEditZoomHint();
-}
-
-function updateEditZoomHint() {
-  const el = document.getElementById('edit-zoom-hint');
-  if (!el) return;
-  const pct = Math.round(editZoom * 100);
-  el.textContent =
-    pct === 100
-      ? '⌘/Ctrl + scroll to zoom · double-click to reset'
-      : `Zoom ${pct}% · ⌘/Ctrl + scroll · double-click reset`;
+  const editDpr = editCanvasBackingDpr();
+  /** Bitmap px = round(patch × scale × dpr); CSS px = bitmap / dpr — matches draw transform so the GPU doesn’t soft-rescale. */
+  const bw = Math.max(1, Math.round(patchW * scaleEdit * editDpr));
+  const bh = Math.max(1, Math.round(patchH * scaleEdit * editDpr));
+  editCanvasDpr = editDpr;
+  canvasEdit.width = bw;
+  canvasEdit.height = bh;
+  canvasEdit.style.width = `${bw / editDpr}px`;
+  canvasEdit.style.height = `${bh / editDpr}px`;
 }
 
 function syncPreviewCanvasMetrics() {
@@ -1068,10 +1153,12 @@ function syncPreviewCanvasMetrics() {
     48,
     previewWrap.clientHeight - PREVIEW_PANEL_PAD_TOP - PREVIEW_PANEL_PAD_BOTTOM,
   );
-  const baseScale = Math.min(DISPLAY_MAX_SCALE, innerW / PHONE_PREVIEW_W, innerH / PHONE_PREVIEW_H);
-  scalePreview = baseScale * PREVIEW_PHONE_SCALE_MULTIPLIER;
-  const cssW = Math.max(1, Math.round(PHONE_PREVIEW_W * scalePreview));
-  const cssH = Math.max(1, Math.round(PHONE_PREVIEW_H * scalePreview));
+  const logicalW = pw + PREVIEW_BUBBLE_PAD * 2;
+  const logicalH = ph + PREVIEW_BUBBLE_PAD * 2;
+  const baseScale = Math.min(DISPLAY_MAX_SCALE, innerW / logicalW, innerH / logicalH);
+  scalePreview = baseScale;
+  const cssW = Math.max(1, Math.round(logicalW * scalePreview));
+  const cssH = Math.max(1, Math.round(logicalH * scalePreview));
   previewCanvasDpr = PREVIEW_CANVAS_PIXEL_SCALE;
   canvasPreview.style.width = `${cssW}px`;
   canvasPreview.style.height = `${cssH}px`;
@@ -1146,12 +1233,17 @@ function renderEditFrame() {
   if (!imgEl) return;
 
   ctx.save();
+  const bw = cvs.width;
+  const bh = cvs.height;
+  ctx.scale(bw / patchW, bh / patchH);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'low';
+  tileNinePatchToRect(ctx, imgEl, 0, 0, patchW, patchH, ninePatch.flexInsets);
+  ctx.restore();
+
   ctx.imageSmoothingEnabled = true;
   if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
-  ctx.scale(editCanvasDpr, editCanvasDpr);
-  ctx.scale(scaleEdit, scaleEdit);
-  tileNinePatchToRect(ctx, imgEl, 0, 0, patchW, patchH, ninePatch.flexInsets);
-
   if (activeZone === 'stretch') {
     drawStretch9Patch(ctx, ninePatch.flexInsets, true);
     drawStretchInsetLabels(ctx, ninePatch.flexInsets);
@@ -1165,7 +1257,6 @@ function renderEditFrame() {
   ctx.restore();
 }
 
-/** Phone mockup + outgoing bubble (right panel). Bubble max width 270px at Y=115 in 390×844 space. */
 function renderPreviewFrame() {
   const ctx = ctxPreview;
   const cvs = canvasPreview;
@@ -1175,7 +1266,9 @@ function renderPreviewFrame() {
 
   const bubbleW = patchPreviewW;
   const bubbleH = patchPreviewH;
-  const bubbleX = PHONE_PREVIEW_W - PHONE_PREVIEW_BUBBLE_MARGIN_R - bubbleW;
+  const pad = PREVIEW_BUBBLE_PAD;
+  const bubbleX = pad;
+  const bubbleY = pad;
 
   ctx.save();
   ctx.imageSmoothingEnabled = true;
@@ -1183,17 +1276,10 @@ function renderPreviewFrame() {
   ctx.scale(previewCanvasDpr, previewCanvasDpr);
   ctx.scale(scalePreview, scalePreview);
 
-  if (phoneChatMockupImg.complete && phoneChatMockupImg.naturalWidth > 0) {
-    ctx.drawImage(phoneChatMockupImg, 0, 0, PHONE_PREVIEW_W, PHONE_PREVIEW_H);
-  } else {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, PHONE_PREVIEW_W, PHONE_PREVIEW_H);
-  }
-
-  tileNinePatchToRect(ctx, imgEl, bubbleX, PHONE_PREVIEW_BUBBLE_Y, bubbleW, bubbleH, ninePatch.flexInsets);
+  tileNinePatchToRect(ctx, imgEl, bubbleX, bubbleY, bubbleW, bubbleH, ninePatch.flexInsets);
 
   ctx.save();
-  ctx.translate(bubbleX, PHONE_PREVIEW_BUBBLE_Y);
+  ctx.translate(bubbleX, bubbleY);
   drawContentPreviewTextSized(
     ctx,
     contentRectSource(),
@@ -1238,7 +1324,7 @@ function drawStretch9PatchSized(ctx, s, ow, oh, isActive) {
 
   ctx.save();
   ctx.strokeStyle = COLORS.flex;
-  ctx.lineWidth = isActive ? 2 : 1;
+  ctx.lineWidth = isActive ? FLEX_GUIDE_LINE_WIDTH_ACTIVE : FLEX_GUIDE_LINE_WIDTH_INACTIVE;
   const x1 = mapX(left, ow) + 0.5, x2 = mapX(imgW - right, ow) + 0.5;
   const y1 = mapY(top, oh) + 0.5, y2 = mapY(imgH - bottom, oh) + 0.5;
   ctx.beginPath();
@@ -1401,8 +1487,10 @@ function drawContentPreviewTextSized(ctx, z, text, ow, oh) {
   const lines = wrapTextLines(ctx, t, wrapW);
   const probeLine = lines[0] || t;
   const { asc, desc } = measureLineVerticalMetrics(ctx, probeLine);
-
-  let yBaseline = d.y + asc;
+  const textBlockH = asc + (lines.length - 1) * lineH + desc;
+  /** Center block when nine-patch growth overshoots (same as computePatchSize target). Avoids lopsided slack on 2+ lines. */
+  const extraY = Math.max(0, (d.h - textBlockH) / 2);
+  let yBaseline = d.y + extraY + asc;
   for (const line of lines) {
     if (yBaseline + desc > d.y + d.h) break;
     ctx.fillText(line, xPos, yBaseline);
@@ -1425,8 +1513,7 @@ function drawZone(ctx, name, z, isActive) {
 
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth = isActive ? 2 : 1;
-  if (isActive) ctx.setLineDash([6, 4]);
+  ctx.lineWidth = isActive ? FLEX_GUIDE_LINE_WIDTH_ACTIVE : FLEX_GUIDE_LINE_WIDTH_INACTIVE;
   ctx.strokeRect(d.x + 0.5, d.y + 0.5, d.w, d.h);
   ctx.restore();
 
@@ -1449,7 +1536,12 @@ const HANDLE_CURSORS = {
 };
 
 function canvasToLogical(dpx, dpy) {
-  return [dpx / scaleEdit, dpy / scaleEdit];
+  const bw = canvasEdit.width;
+  const bh = canvasEdit.height;
+  if (bw < 1 || bh < 1) return [0, 0];
+  const cssW = bw / editCanvasDpr;
+  const cssH = bh / editCanvasDpr;
+  return [(dpx / cssW) * patchW, (dpy / cssH) * patchH];
 }
 
 function hitHandle(z, dpx, dpy) {
@@ -1577,9 +1669,9 @@ editCanvasWrap.addEventListener(
   { passive: false },
 );
 editCanvasWrap.addEventListener('dblclick', (e) => {
-  if (!imgEl || editZoom === 1) return;
+  if (!imgEl || Math.abs(editZoom - EDIT_ZOOM_DEFAULT) < 1e-6) return;
   e.preventDefault();
-  editZoom = 1;
+  editZoom = EDIT_ZOOM_DEFAULT;
   fitCanvases();
   render();
 });
@@ -1769,67 +1861,97 @@ function setZone(name) {
   document.getElementById('tab-content').classList.toggle('tab-active', name === 'content');
   document.getElementById('tab-stretch').setAttribute('aria-selected', name === 'stretch');
   document.getElementById('tab-content').setAttribute('aria-selected', name === 'content');
+  const tabHint = document.getElementById('tab-mode-hint');
+  if (tabHint) {
+    tabHint.textContent =
+      name === 'stretch'
+        ? 'Determine how this bubble should stretch'
+        : 'Determine where the content sits in this bubble';
+  }
   scheduleSaveZoneState();
   render();
 }
 
-function drawSnapshotContentRectSized(oc, z, lw, ow, oh) {
+function drawSnapshotContentRectSized(oc, z, ow, oh) {
   if (!z || !z.active || z.w < 1 || z.h < 1) return;
   const d = mapRectToDest(z, ow, oh);
   const c = COLORS.content;
   oc.fillStyle = c + '38';
   oc.fillRect(d.x, d.y, d.w, d.h);
+  oc.save();
   oc.strokeStyle = c;
-  oc.lineWidth = Math.max(lw, 2);
-  oc.setLineDash([6, 4]);
-  oc.strokeRect(d.x + lw / 2, d.y + lw / 2, d.w - lw, d.h - lw);
-  oc.setLineDash([]);
+  oc.lineWidth = FLEX_GUIDE_LINE_WIDTH_ACTIVE;
+  oc.strokeRect(d.x + 0.5, d.y + 0.5, d.w, d.h);
+  oc.restore();
 }
 
-function generateSnapshot() {
+/**
+ * Edit-panel markup at native bubble size (imgW×imgH), not the right preview’s text-stretched patch.
+ * Tiled bubble + one mode’s overlays only (no preview text).
+ * @param {'flex' | 'content'} mode
+ */
+function buildExportSnapshotCanvas(mode) {
+  const pw = imgW;
+  const ph = imgH;
+  const off = document.createElement('canvas');
+  off.width = Math.max(1, Math.round(pw * SNAPSHOT_EXPORT_SCALE));
+  off.height = Math.max(1, Math.round(ph * SNAPSHOT_EXPORT_SCALE));
+  const oc = off.getContext('2d');
+  oc.scale(SNAPSHOT_EXPORT_SCALE, SNAPSHOT_EXPORT_SCALE);
+  tileNinePatchToRect(oc, imgEl, 0, 0, pw, ph, ninePatch.flexInsets);
+  if (mode === 'flex') {
+    drawStretch9PatchSized(oc, ninePatch.flexInsets, pw, ph, true);
+    drawStretchInsetLabelsSized(oc, ninePatch.flexInsets, pw, ph);
+  } else {
+    drawSnapshotContentRectSized(oc, contentRectSource(), pw, ph);
+    drawContentPaddingLabelsSized(oc, pw, ph);
+  }
+  return { canvas: off, pw, ph };
+}
+
+function canvasToPngBytesArray(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Export failed to create PNG'));
+        return;
+      }
+      blob.arrayBuffer().then((buf) => resolve(Array.from(new Uint8Array(buf))));
+    }, 'image/png');
+  });
+}
+
+async function generateSnapshot() {
   if (!imgEl) return;
 
   const btn = document.getElementById('btn-export');
   btn.disabled = true;
   btn.textContent = 'Exporting…';
 
-  const { pw, ph } = computePatchSize();
-  const off = document.createElement('canvas');
-  off.width = pw;
-  off.height = ph;
-  const oc = off.getContext('2d');
-
-  tileNinePatchToRect(oc, imgEl, 0, 0, pw, ph, ninePatch.flexInsets);
-
-  const lw = Math.max(2, Math.round(imgW / 200));
-  const txt = document.getElementById('preview-text').value;
-
-  if (activeZone === 'stretch') {
-    drawStretch9PatchSized(oc, ninePatch.flexInsets, pw, ph, true);
-    drawStretchInsetLabelsSized(oc, ninePatch.flexInsets, pw, ph);
-  } else {
-    const cr = contentRectSource();
-    drawSnapshotContentRectSized(oc, cr, lw, pw, ph);
-    drawContentPaddingLabelsSized(oc, pw, ph);
-  }
-
-  drawContentPreviewTextSized(oc, contentRectSource(), txt, pw, ph);
-
-  off.toBlob((blob) => {
-    blob.arrayBuffer().then((buf) => {
-      parent.postMessage(
-        {
-          pluginMessage: {
-            type: 'create-snapshot',
-            bytes: Array.from(new Uint8Array(buf)),
-            width: pw,
-            height: ph,
-          },
+  try {
+    const flex = buildExportSnapshotCanvas('flex');
+    const content = buildExportSnapshotCanvas('content');
+    const { pw, ph } = flex;
+    const [flexBytes, contentBytes] = await Promise.all([
+      canvasToPngBytesArray(flex.canvas),
+      canvasToPngBytesArray(content.canvas),
+    ]);
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: 'create-snapshots',
+          flexBytes,
+          contentBytes,
+          width: pw,
+          height: ph,
         },
-        '*',
-      );
-    });
-  }, 'image/png');
+      },
+      '*',
+    );
+  } catch (e) {
+    showStatus(String(e && e.message ? e.message : e), true);
+    resetExportButton();
+  }
 }
 
 function onSnapshotDone() {

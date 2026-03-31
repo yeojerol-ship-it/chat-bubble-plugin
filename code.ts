@@ -4,6 +4,15 @@ let previewDebounce: ReturnType<typeof setTimeout> | null = null;
 let previewGeneration = 0;
 /** Which selected bubble the UI is editing (kept while that node stays in the selection). */
 let activeBubbleId: string | null = null;
+/** Export source bubbles at higher density so the markup editor can zoom without pixelating immediately. */
+const PREVIEW_EXPORT_SCALE = 4;
+
+/** Must match `ZONE_STORAGE_PREFIX` in ui.html — zones are stored in figma.clientStorage (UI localStorage is unreliable). */
+const ZONE_V1_PREFIX = 'chatBubbleZones:v1:';
+
+function zoneStorageKeyMain(nodeId: string): string {
+  return ZONE_V1_PREFIX + nodeId;
+}
 
 type ExportableNode = SceneNode & ExportMixin & LayoutMixin;
 
@@ -74,13 +83,21 @@ async function sendPreviewFromSelection(gen: number): Promise<void> {
   try {
     const bytes = await node.exportAsync({
       format: 'PNG',
-      constraint: { type: 'SCALE', value: 1 },
+      constraint: { type: 'SCALE', value: PREVIEW_EXPORT_SCALE },
     });
 
     if (gen !== previewGeneration) return;
 
     const w = Math.round(node.width);
     const h = Math.round(node.height);
+
+    let zoneSnapshot: string | null = null;
+    try {
+      const raw = await figma.clientStorage.getAsync(zoneStorageKeyMain(node.id));
+      zoneSnapshot = typeof raw === 'string' ? raw : null;
+    } catch {
+      zoneSnapshot = null;
+    }
 
     figma.ui.postMessage({
       type: 'preview',
@@ -89,6 +106,7 @@ async function sendPreviewFromSelection(gen: number): Promise<void> {
       height: h,
       nodeId: node.id,
       selectionPeers: peers,
+      zoneSnapshot,
     });
   } catch (e) {
     if (gen !== previewGeneration) return;
@@ -124,42 +142,70 @@ figma.ui.onmessage = async (msg: { type: string; [key: string]: unknown }) => {
     return;
   }
 
-  // ── Annotated PNG from UI → image node on canvas ────────────────────────
-  if (msg.type === 'create-snapshot') {
+  if (msg.type === 'persist-zones') {
+    const nodeId = msg.nodeId != null && msg.nodeId !== '' ? String(msg.nodeId) : '';
+    const json = msg.json;
+    if (nodeId && typeof json === 'string' && json.length > 0) {
+      try {
+        await figma.clientStorage.setAsync(zoneStorageKeyMain(nodeId), json);
+      } catch {
+        /* ignore */
+      }
+    }
+    return;
+  }
+
+  // ── Annotated PNGs from UI (flex + content, no preview text) → two image rects ──
+  if (msg.type === 'create-snapshots') {
     try {
-      const bytes = new Uint8Array(msg.bytes as number[]);
+      const flexBytes = new Uint8Array(msg.flexBytes as number[]);
+      const contentBytes = new Uint8Array(msg.contentBytes as number[]);
       const width = msg.width as number;
       const height = msg.height as number;
 
-      const image = figma.createImage(bytes);
-      const rect = figma.createRectangle();
-      rect.name = 'Bubble Zone Snapshot';
-      rect.resize(width, height);
-      rect.fills = [{ type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }];
+      const imageFlex = figma.createImage(flexBytes);
+      const imageContent = figma.createImage(contentBytes);
+
+      const rectFlex = figma.createRectangle();
+      rectFlex.name = 'Bubble — Stretch zone';
+      rectFlex.resize(width, height);
+      rectFlex.fills = [{ type: 'IMAGE', imageHash: imageFlex.hash, scaleMode: 'FILL' }];
+
+      const rectContent = figma.createRectangle();
+      rectContent.name = 'Bubble — Content zone';
+      rectContent.resize(width, height);
+      rectContent.fills = [{ type: 'IMAGE', imageHash: imageContent.hash, scaleMode: 'FILL' }];
 
       const exportable = getExportableSelection();
       const anchorNode =
         (activeBubbleId && exportable.find((n) => n.id === activeBubbleId)) || exportable[0];
 
+      let x = figma.viewport.bounds.x + 20;
+      let y = figma.viewport.bounds.y + 20;
       if (anchorNode && 'x' in anchorNode) {
         const orig = anchorNode as LayoutMixin & SceneNode;
-        rect.x = orig.x + orig.width + 40;
-        rect.y = orig.y;
-      } else {
-        rect.x = figma.viewport.bounds.x + 20;
-        rect.y = figma.viewport.bounds.y + 20;
+        x = orig.x + orig.width + 40;
+        y = orig.y;
       }
 
-      figma.currentPage.appendChild(rect);
-      figma.viewport.scrollAndZoomIntoView([rect]);
+      const gap = 16;
+      rectFlex.x = x;
+      rectFlex.y = y;
+      rectContent.x = x + width + gap;
+      rectContent.y = y;
+
+      figma.currentPage.appendChild(rectFlex);
+      figma.currentPage.appendChild(rectContent);
+      figma.viewport.scrollAndZoomIntoView([rectFlex, rectContent]);
 
       figma.ui.postMessage({ type: 'snapshot-done' });
     } catch (e) {
       figma.ui.postMessage({
         type: 'error',
-        message: 'Could not create snapshot: ' + String(e),
+        message: 'Could not create snapshots: ' + String(e),
       });
     }
+    return;
   }
 
   if (msg.type === 'close') {
