@@ -27,9 +27,9 @@ html {
   --accent-hover: #5cadff;
   --accent-press: #2d87e6;
   --danger: #ff6b6b;
-  --radius-sm: 7px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 9px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-preview: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.07);
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -50,6 +50,7 @@ body {
   flex-direction: column;
   min-height: 0;
   -webkit-font-smoothing: antialiased;
+  cursor: default;
 }
 
 #main-split {
@@ -80,11 +81,23 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
     var(--bg-well);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 0 1px var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/** Scrollable canvas + hint; bubble strip sits below (flex-shrink: 0). */
+.edit-canvas-body {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 #edit-canvas-inner {
@@ -121,9 +134,14 @@ body {
   flex-shrink: 0;
 }
 
-.bubble-switcher {
+#edit-canvas-wrap .bubble-switcher {
   flex-shrink: 0;
-  margin: 0 14px 10px;
+  width: 100%;
+  margin: 0;
+  padding-top: 8px;
+  margin-top: 0;
+  border-top: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 .bubble-switcher.hidden {
   display: none;
@@ -133,7 +151,7 @@ body {
   flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
-  padding: 4px 4px 8px;
+  padding: 2px 0 4px;
   -webkit-overflow-scrolling: touch;
 }
 .bubble-peer {
@@ -145,11 +163,11 @@ body {
   gap: 0;
   padding: 4px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-subtle);
   background: var(--bg-well);
   color: var(--text-secondary);
   font-family: inherit;
-  cursor: pointer;
+  cursor: default;
   font-size: 10px;
   text-align: center;
   transition: border-color 0.12s var(--ease), background 0.12s var(--ease), color 0.12s var(--ease);
@@ -158,7 +176,7 @@ body {
   width: 30px;
   height: 30px;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--bg-well-mid);
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -168,21 +186,22 @@ body {
 .bubble-peer-placeholder {
   width: 30px;
   height: 30px;
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--bg-well-mid);
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-sizing: border-box;
 }
-.bubble-peer:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+.bubble-peer:hover:not(.bubble-peer-active) {
+  border-color: rgba(255, 255, 255, 0.14);
   color: var(--text-primary);
 }
 .bubble-peer.bubble-peer-active {
-  border-color: rgba(64, 156, 255, 0.5);
+  border-width: 3px;
+  border-color: var(--accent-press);
   background: var(--bg-elevated);
   color: var(--text-primary);
-  box-shadow: 0 0 0 1px rgba(64, 156, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(64, 156, 255, 0.22);
 }
 
 #preview-column {
@@ -209,16 +228,82 @@ body {
     var(--bg-app);
 }
 
+/** Figma DM shell (node 3558:13611): 390×844, scaled to fit panel */
+#chat-shell-viewport {
+  --chat-scale: 1;
+  width: calc(390px * var(--chat-scale));
+  height: calc(844px * var(--chat-scale));
+  border-radius: calc(46px * var(--chat-scale));
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  background: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+#chat-shell-inner {
+  width: 390px;
+  height: 844px;
+  transform-origin: 0 0;
+  position: relative;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-shell-top-img,
+.chat-shell-bottom-img {
+  display: block;
+  width: 390px;
+  flex-shrink: 0;
+  pointer-events: none;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.chat-shell-top-img {
+  height: 104px;
+}
+
+.chat-shell-bottom-img {
+  height: 142px;
+  object-position: bottom center;
+}
+
+.chat-shell-mid {
+  flex-shrink: 0;
+  height: 598px;
+  background: #fff;
+  position: relative;
+}
+
+/** Outgoing bubble: right-aligned, inset from top of message area */
+#chat-bubble-slot {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 24px;
+  bottom: 154px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
 #bubble-preview-stage {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   line-height: 0;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-preview);
-  overflow: hidden;
+  box-shadow: none;
+  overflow: visible;
+  background: transparent;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 #canvas-preview {
   display: block;
+  background: transparent;
 }
 
 #tabs {
@@ -247,7 +332,7 @@ body {
   font-weight: 600;
   font-family: inherit;
   letter-spacing: 0.02em;
-  cursor: pointer;
+  cursor: default;
   transition: color 0.15s var(--ease), background 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 .tab:hover {
@@ -338,7 +423,7 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.22);
   border-radius: 50%;
   background: transparent;
-  cursor: pointer;
+  cursor: default;
   box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
@@ -386,7 +471,7 @@ body {
   font-weight: 600;
   font-family: inherit;
   letter-spacing: 0.02em;
-  cursor: pointer;
+  cursor: default;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 12px rgba(64, 156, 255, 0.22);
   transition: filter 0.15s var(--ease), transform 0.1s var(--ease), opacity 0.15s var(--ease);
 }
@@ -411,6 +496,7 @@ body {
 #status-overlay {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -451,15 +537,17 @@ body {
           onclick="setZone('content')">Content</button>
       </div>
     </div>
-    <div id="bubble-switcher" class="bubble-switcher hidden" role="group" aria-label="Bubbles in selection">
-      <div id="bubble-switcher-scroll" class="bubble-switcher-scroll"></div>
-    </div>
     <div id="edit-canvas-wrap">
-      <div class="edit-canvas-stack">
-        <div id="edit-canvas-inner">
-          <canvas id="canvas-edit"></canvas>
+      <div class="edit-canvas-body">
+        <div class="edit-canvas-stack">
+          <div id="edit-canvas-inner">
+            <canvas id="canvas-edit"></canvas>
+          </div>
+          <p id="tab-mode-hint" class="tab-mode-hint">Determine how this bubble should stretch</p>
         </div>
-        <p id="tab-mode-hint" class="tab-mode-hint">Determine how this bubble should stretch</p>
+      </div>
+      <div id="bubble-switcher" class="bubble-switcher hidden" role="group" aria-label="Bubbles in selection">
+        <div id="bubble-switcher-scroll" class="bubble-switcher-scroll"></div>
       </div>
       <div id="status-overlay">
         <div id="status-box">Loading preview…</div>
@@ -480,10 +568,32 @@ body {
       <button type="button" id="btn-export" disabled onclick="generateSnapshot()">Paste specs to Figma</button>
     </div>
   </aside>
-  <section id="preview-column">
+  <section id="preview-column" aria-label="Chat message preview">
     <div id="preview-canvas-wrap">
-      <div id="bubble-preview-stage">
-        <canvas id="canvas-preview"></canvas>
+      <div id="chat-shell-viewport">
+        <div id="chat-shell-inner">
+          <img
+            class="chat-shell-top-img"
+            src="https://www.figma.com/api/mcp/asset/15cc509c-9622-4eac-9fda-0e06e16b7697"
+            width="390"
+            height="104"
+            alt=""
+          />
+          <div class="chat-shell-mid">
+            <div id="chat-bubble-slot">
+              <div id="bubble-preview-stage">
+                <canvas id="canvas-preview"></canvas>
+              </div>
+            </div>
+          </div>
+          <img
+            class="chat-shell-bottom-img"
+            src="https://www.figma.com/api/mcp/asset/899c00b4-77e8-459e-94f3-4ae0ecb04016"
+            width="390"
+            height="142"
+            alt=""
+          />
+        </div>
       </div>
     </div>
   </section>
@@ -504,8 +614,10 @@ const CONTENT_LINE_HEIGHT_PX = CONTENT_FONT_PX * 1.5;
 /** Minimum inner text box (px) — enforced before text-driven growth. */
 const CONTENT_INNER_MIN_W = 26;
 const CONTENT_INNER_MIN_H = 24;
-/** Max line width before wrap (patch/output px) — analogous to native _maxTextWidth. */
+/** Max line width for preview text metrics (logical px). */
 const MAX_TEXT_WIDTH = 300;
+/** Max total preview bubble width (logical px); beyond this the patch grows vertically via wrapping. */
+const PREVIEW_MAX_BUBBLE_WIDTH = 270;
 /** Subpixel mapped rects. */
 const VERTICAL_FIT_EPS_PX = 1;
 
@@ -622,10 +734,22 @@ function editCanvasBackingDpr() {
 }
 /** Padding around the bubble inside the preview canvas (logical px, before scalePreview). */
 const PREVIEW_BUBBLE_PAD = 20;
-/** Insets used when fitting the preview canvas inside #preview-canvas-wrap. */
+/**
+ * In the chat-shell preview, a large PREVIEW_BUBBLE_PAD leaves transparent canvas margin that reads as a white “halo” on the white thread.
+ * Keep this minimal so the skin sits flush in the message area.
+ */
+const CHAT_PREVIEW_BUBBLE_PAD = 0;
+/** Insets used when fitting the scaled chat shell inside #preview-canvas-wrap. */
 const PREVIEW_PANEL_PAD_TOP = 24;
 const PREVIEW_PANEL_PAD_X = 24;
 const PREVIEW_PANEL_PAD_BOTTOM = 28;
+/** Figma DM device frame (node 3558:13611). */
+const CHAT_SHELL_W = 390;
+const CHAT_SHELL_H = 844;
+/** Multiply fit-to-panel scale so phone + preview bubble render slightly smaller (e.g. 0.9 = 10% smaller). */
+const CHAT_SHELL_DISPLAY_SCALE = 0.9;
+/** Extra inset inside #chat-bubble-slot when fitting the preview canvas. */
+const CHAT_SLOT_FIT_PAD = 8;
 const EDGE_HIT_PX = 7;
 
 const canvasEdit = document.getElementById('canvas-edit');
@@ -1176,6 +1300,15 @@ function computePatchSize() {
       if (hNeed <= innerH + VERTICAL_FIT_EPS_PX) break;
       growInnerHeightTo(Math.max(CONTENT_INNER_MIN_H, Math.ceil(hNeed)));
     }
+
+    // 4) Cap total bubble width; refit height so text wraps vertically instead of widening further.
+    pw = Math.max(L + R + 2, Math.min(pw, PREVIEW_MAX_BUBBLE_WIDTH));
+    for (let j = 0; j < 120; j++) {
+      const { innerW, innerH } = measureInner();
+      const hNeed = previewTextBlockHeightPx(txt, innerW);
+      if (hNeed <= innerH + VERTICAL_FIT_EPS_PX) break;
+      growInnerHeightTo(Math.max(CONTENT_INNER_MIN_H, Math.ceil(hNeed)));
+    }
   }
 
   pw = Math.max(pw, L + R + 2);
@@ -1210,6 +1343,19 @@ function tileNinePatchToRect(ctx, img, x, y, dw, dh, s) {
   ctx.drawImage(img, sw - srcR, sh - srcB, srcR, srcB, x + dw - R, y + dh - B, R, B);
 }
 
+function syncChatShellScale() {
+  const wrap = document.getElementById('preview-canvas-wrap');
+  const viewport = document.getElementById('chat-shell-viewport');
+  const inner = document.getElementById('chat-shell-inner');
+  if (!wrap || !viewport || !inner) return;
+  const availW = Math.max(80, wrap.clientWidth - PREVIEW_PANEL_PAD_X * 2);
+  const availH = Math.max(80, wrap.clientHeight - PREVIEW_PANEL_PAD_TOP - PREVIEW_PANEL_PAD_BOTTOM);
+  const fitScale = Math.min(1, availW / CHAT_SHELL_W, availH / CHAT_SHELL_H);
+  const scale = fitScale * CHAT_SHELL_DISPLAY_SCALE;
+  viewport.style.setProperty('--chat-scale', String(scale));
+  inner.style.transform = `scale(${scale})`;
+}
+
 function syncEditCanvasMetrics() {
   patchW = imgEl ? imgW : 100;
   patchH = imgEl ? imgH : 100;
@@ -1234,14 +1380,14 @@ function syncPreviewCanvasMetrics() {
   const { pw, ph } = computePatchSize();
   patchPreviewW = pw;
   patchPreviewH = ph;
-  const previewWrap = document.getElementById('preview-canvas-wrap');
-  const innerW = Math.max(48, previewWrap.clientWidth - PREVIEW_PANEL_PAD_X * 2);
-  const innerH = Math.max(
-    48,
-    previewWrap.clientHeight - PREVIEW_PANEL_PAD_TOP - PREVIEW_PANEL_PAD_BOTTOM,
-  );
-  const logicalW = pw + PREVIEW_BUBBLE_PAD * 2;
-  const logicalH = ph + PREVIEW_BUBBLE_PAD * 2;
+  const slot = document.getElementById('chat-bubble-slot');
+  if (!slot) return;
+  const pad2 = CHAT_SLOT_FIT_PAD * 2;
+  const innerW = Math.max(48, slot.clientWidth - pad2);
+  const innerH = Math.max(48, slot.clientHeight - pad2);
+  const chatPad = CHAT_PREVIEW_BUBBLE_PAD;
+  const logicalW = pw + chatPad * 2;
+  const logicalH = ph + chatPad * 2;
   const baseScale = Math.min(DISPLAY_MAX_SCALE, innerW / logicalW, innerH / logicalH);
   scalePreview = baseScale;
   const cssW = Math.max(1, Math.round(logicalW * scalePreview));
@@ -1255,6 +1401,7 @@ function syncPreviewCanvasMetrics() {
 
 function fitCanvases() {
   syncEditCanvasMetrics();
+  syncChatShellScale();
   syncPreviewCanvasMetrics();
 }
 
@@ -1353,7 +1500,7 @@ function renderPreviewFrame() {
 
   const bubbleW = patchPreviewW;
   const bubbleH = patchPreviewH;
-  const pad = PREVIEW_BUBBLE_PAD;
+  const pad = CHAT_PREVIEW_BUBBLE_PAD;
   const bubbleX = pad;
   const bubbleY = pad;
 
